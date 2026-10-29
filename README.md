@@ -42,6 +42,15 @@ Open [http://localhost:3000](http://localhost:3000). Run `npm run lint` and
    the public login form to sign in.
 8. Restart the development server after changing `.env.local`.
 
+### Email confirmation rate limits
+
+Supabase's built-in email service has a low project-wide sending limit. If
+signup reports that the email rate limit was exceeded, wait for the hourly
+limit to reset before retrying. For production delivery, configure and verify a
+custom SMTP sender in **Authentication → SMTP Settings**; this allows the
+project's email limit to be raised in **Authentication → Rate Limits**. Do not
+raise the limit until the SMTP provider is configured and verified.
+
 ## Admin access
 
 The admin console is served by this app at `/admin`; it is not a separate

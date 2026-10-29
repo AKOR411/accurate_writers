@@ -94,6 +94,13 @@ export async function signup(
   });
 
   if (error) {
+    if (/email rate limit exceeded/i.test(error.message)) {
+      return {
+        error:
+          "Supabase has temporarily paused confirmation emails because this project's email limit was reached. Wait for the hourly limit to reset before trying again. For reliable signup emails, configure a verified custom SMTP sender in Supabase Auth → SMTP Settings.",
+      };
+    }
+
     return { error: error.message };
   }
 
