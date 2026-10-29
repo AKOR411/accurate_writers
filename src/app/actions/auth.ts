@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import type { AuthFormState } from "@/lib/auth-form";
+import { isAdminHost } from "@/lib/admin-host";
 import { getSupabaseConfig } from "@/lib/supabase/config";
 import { createClient } from "@/lib/supabase/server";
 
@@ -40,6 +41,17 @@ export async function signup(
   _previousState: AuthFormState,
   formData: FormData,
 ): Promise<AuthFormState> {
+  const requestHeaders = await headers();
+  if (
+    isAdminHost(
+      requestHeaders.get("host") ??
+        requestHeaders.get("x-forwarded-host")?.split(",")[0].trim() ??
+        null,
+    )
+  ) {
+    return { error: "Public registration is not available on the admin portal." };
+  }
+
   const config = getSupabaseConfig();
   if (!config.configured) {
     return { error: config.message };
@@ -130,18 +142,8 @@ export async function login(
   const host =
     requestHeaders.get("host") ??
     requestHeaders.get("x-forwarded-host")?.split(",")[0].trim();
-  let hostname = "";
-  if (host) {
-    try {
-      hostname = new URL(`https://${host}`).hostname.toLowerCase();
-    } catch {
-      hostname = "";
-    }
-  }
-
-  const adminHostname = process.env.ADMIN_HOSTNAME?.trim().toLowerCase();
   revalidatePath("/", "layout");
-  redirect(hostname && hostname === adminHostname ? "/admin" : "/dashboard");
+  redirect(isAdminHost(host ?? null) ? "/admin" : "/dashboard");
 }
 
 export async function logout(): Promise<void> {

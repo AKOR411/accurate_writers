@@ -9,11 +9,16 @@ import type { AuthFormState } from "@/lib/auth-form";
 type AccountRole = "employer" | "writer";
 type FlowStep = "role" | "details";
 
-export default function SignupFlow() {
+export default function SignupFlow({
+  isAdminPortal = false,
+}: {
+  isAdminPortal?: boolean;
+}) {
   const searchParams = useSearchParams();
   const requestedRole: AccountRole =
     searchParams.get("role") === "employer" ? "employer" : "writer";
-  const requestedMode = searchParams.get("mode") === "login" ? "login" : "signup";
+  const requestedMode =
+    isAdminPortal || searchParams.get("mode") === "login" ? "login" : "signup";
   const [role, setRole] = useState<AccountRole>(requestedRole);
   const [step, setStep] = useState<FlowStep>(
     requestedMode === "login" ? "details" : "role",
@@ -61,39 +66,49 @@ export default function SignupFlow() {
           </span>
           <span>Accurate Writers</span>
         </Link>
-        <p>
-          {mode === "login" ? "New to Accurate Writers?" : "Already have an account?"}
-          <a
-            href={mode === "login" ? "/register" : "/register?mode=login"}
-            onClick={(event) => {
-              event.preventDefault();
-              if (mode === "login") {
-                openSignup();
-              } else {
-                openLogin();
-              }
-            }}
-          >
-            {mode === "login" ? " Sign up" : " Log in"}
-          </a>
-        </p>
+        {!isAdminPortal && (
+          <p>
+            {mode === "login" ? "New to Accurate Writers?" : "Already have an account?"}
+            <a
+              href={mode === "login" ? "/register" : "/register?mode=login"}
+              onClick={(event) => {
+                event.preventDefault();
+                if (mode === "login") {
+                  openSignup();
+                } else {
+                  openLogin();
+                }
+              }}
+            >
+              {mode === "login" ? " Sign up" : " Log in"}
+            </a>
+          </p>
+        )}
       </header>
 
       <main className="register-main">
         <section className="register-card" aria-labelledby="register-title">
           <div className="register-heading">
             <p className="section-kicker">
-              {mode === "login" ? "WELCOME BACK" : "JOIN THE COMMUNITY"}
+              {isAdminPortal
+                ? "ADMINISTRATOR ACCESS"
+                : mode === "login"
+                  ? "WELCOME BACK"
+                  : "JOIN THE COMMUNITY"}
             </p>
             <h1 id="register-title">
-              {mode === "login"
+              {isAdminPortal
+                ? "Sign in to the admin console"
+                : mode === "login"
                 ? "Log in to your account"
                 : step === "role"
                   ? "Create your account"
                   : "A few details to get started"}
             </h1>
             <p>
-              {mode === "login"
+              {isAdminPortal
+                ? "Authorized administrators only."
+                : mode === "login"
                 ? "Pick up where you left off."
                 : step === "role"
                   ? "Choose your role to get started."
@@ -222,13 +237,15 @@ export default function SignupFlow() {
                   <span aria-hidden="true">→</span>
                 </button>
               </form>
-              <p className="register-terms">
-                {mode === "login" ? (
-                  <Link href="/register">Create a new account</Link>
-                ) : (
-                  "Your account will be created securely with Supabase."
-                )}
-              </p>
+              {!isAdminPortal && (
+                <p className="register-terms">
+                  {mode === "login" ? (
+                    <Link href="/register">Create a new account</Link>
+                  ) : (
+                    "Your account will be created securely with Supabase."
+                  )}
+                </p>
+              )}
             </>
           )}
         </section>

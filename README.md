@@ -55,7 +55,9 @@ website and admin subdomain have separate sign-in sessions.
 
 To grant the first administrator:
 
-1. Register a normal writer or employer account and confirm its email.
+1. In Supabase, open **Authentication → Users** and create the manager account
+   directly. Set the email and choose a new password privately; do not use
+   public writer/employer signup to create an administrator.
 2. In the Supabase SQL Editor, run the statement below after replacing the
    example address with the exact email used for that account:
 
@@ -67,7 +69,8 @@ To grant the first administrator:
    on conflict (user_id) do nothing;
    ```
 
-3. Sign in to the website and open `/admin`.
+3. Sign in at the admin project URL. The admin portal provides sign-in only;
+   public signup links and signup actions are disabled on that hostname.
 
 To revoke access, remove that account from the private admin table:
 

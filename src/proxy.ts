@@ -1,22 +1,13 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
+import { isAdminHost } from "./lib/admin-host";
 import { getSupabaseConfig } from "./lib/supabase/config";
 import type { Database } from "./lib/supabase/database.types";
 
 function getAdminRewritePath(request: NextRequest): string | null {
-  const adminHostname = process.env.ADMIN_HOSTNAME?.trim().toLowerCase();
   const requestHost =
     request.headers.get("host") ?? request.headers.get("x-forwarded-host");
-  let requestHostname = request.nextUrl.hostname.toLowerCase();
-  if (requestHost) {
-    try {
-      requestHostname = new URL(`https://${requestHost}`).hostname.toLowerCase();
-    } catch {
-      requestHostname = "";
-    }
-  }
-
-  if (!adminHostname || requestHostname !== adminHostname) {
+  if (!isAdminHost(requestHost ?? request.nextUrl.hostname)) {
     return null;
   }
 
@@ -46,6 +37,25 @@ function getAdminRewritePath(request: NextRequest): string | null {
 export async function proxy(request: NextRequest) {
   const adminRewritePath = getAdminRewritePath(request);
   const pathname = request.nextUrl.pathname;
+  const requestHost =
+    request.headers.get("host") ?? request.headers.get("x-forwarded-host");
+  const isAdminPortal = isAdminHost(requestHost ?? request.nextUrl.hostname);
+
+  if (
+    isAdminPortal &&
+    (pathname === "/dashboard" || pathname.startsWith("/dashboard/"))
+  ) {
+    return NextResponse.redirect(new URL("/admin", request.url));
+  }
+
+  if (
+    isAdminPortal &&
+    pathname === "/register" &&
+    request.nextUrl.searchParams.get("mode") === "signup"
+  ) {
+    return NextResponse.redirect(new URL("/register?mode=login", request.url));
+  }
+
   const isAdminRoute =
     pathname === "/admin" ||
     pathname.startsWith("/admin/") ||

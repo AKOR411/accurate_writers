@@ -1,4 +1,5 @@
 import { NextResponse, type NextRequest } from "next/server";
+import { isAdminHost } from "@/lib/admin-host";
 import { getSupabaseConfig } from "@/lib/supabase/config";
 import { createClient } from "@/lib/supabase/server";
 
@@ -26,6 +27,10 @@ export async function GET(request: NextRequest) {
   if (error) {
     console.error("Supabase auth callback failed:", error.message);
     return NextResponse.redirect(new URL("/register?error=confirmation", request.url));
+  }
+
+  if (isAdminHost(request.headers.get("host"))) {
+    return NextResponse.redirect(new URL("/admin", request.url));
   }
 
   return NextResponse.redirect(

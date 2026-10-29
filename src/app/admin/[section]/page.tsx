@@ -418,9 +418,9 @@ export default async function AdminSectionPage({
         <p className="admin-eyebrow">INITIAL ADMIN ACCESS</p>
         <h2>Grant admin access from Supabase</h2>
         <p>
-          Create and confirm your own writer or employer account first. Then run
-          this SQL in the Supabase SQL Editor to grant its account admin
-          access. Replace the email with the exact email used to register.
+          Create the manager account in Supabase under Authentication → Users.
+          Then run this SQL in the Supabase SQL Editor to grant that account
+          administrator access. Replace the email with the account email.
         </p>
         <pre className="admin-sql"><code>{`insert into private.admin_users (user_id)
 select id
