@@ -57,10 +57,14 @@ sign-in sessions.
 
 To grant the first administrator:
 
-1. In Supabase, open **Authentication → Users** and create the manager account
+1. In the Supabase SQL Editor, run the migrations in order:
+   `supabase/migrations/20261029000000_create_profiles.sql`, then
+   `supabase/migrations/20261029000001_admin_console.sql`. The admin login
+   checks the `public.is_admin()` function created by the second migration.
+2. In Supabase, open **Authentication → Users** and create the manager account
    directly. Set the email and choose a new password privately; do not use
    public writer/employer signup to create an administrator.
-2. In the Supabase SQL Editor, run the statement below after replacing the
+3. In the Supabase SQL Editor, run the statement below after replacing the
    example address with the exact email used for that account:
 
    ```sql
@@ -71,7 +75,7 @@ To grant the first administrator:
    on conflict (user_id) do nothing;
    ```
 
-3. Sign in at the admin project URL. The admin portal provides sign-in only;
+4. Sign in at the admin project URL. The admin portal provides sign-in only;
    public signup links and signup actions are disabled on that hostname.
 
 To revoke access, remove that account from the private admin table:

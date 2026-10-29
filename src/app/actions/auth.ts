@@ -140,8 +140,24 @@ export async function login(
 
   const requestHeaders = await headers();
   const host =
-    requestHeaders.get("host") ??
-    requestHeaders.get("x-forwarded-host")?.split(",")[0].trim();
+    requestHeaders.get("x-forwarded-host")?.split(",")[0].trim() ??
+    requestHeaders.get("host");
+  if (isAdminHost(host ?? null)) {
+    const { data: isAdmin, error: adminError } = await supabase.rpc("is_admin");
+    if (adminError) {
+      return {
+        error:
+          "Admin setup is incomplete. In Supabase SQL Editor, apply the admin-console migration, then try again.",
+      };
+    }
+    if (!isAdmin) {
+      return {
+        error:
+          "This account signed in, but it does not have administrator access. Grant this user admin access in Supabase, then try again.",
+      };
+    }
+  }
+
   revalidatePath("/", "layout");
   redirect(isAdminHost(host ?? null) ? "/admin" : "/dashboard");
 }
