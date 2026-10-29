@@ -26,10 +26,45 @@ Open [http://localhost:3000](http://localhost:3000). Run `npm run lint` and
 5. Apply `supabase/migrations/20261029000000_create_profiles.sql` in the
    Supabase SQL Editor. It creates account profiles, a role enum, a profile
    trigger, and row-level security policies.
-6. In **Authentication → URL Configuration**, set the Site URL to the site
+6. Apply `supabase/migrations/20261029000001_admin_console.sql` in the SQL
+   Editor after the profiles migration. It adds protected job and application
+   records and the private administrator access list.
+7. In **Authentication → URL Configuration**, set the Site URL to the site
    origin and allow `/auth/callback` as a redirect URL. Keep email confirmation
    enabled for production.
-7. Restart the development server after changing `.env.local`.
+8. Restart the development server after changing `.env.local`.
+
+## Admin access
+
+The admin console is served by this app at `/admin`; it is not a separate
+deployment. To grant the first administrator:
+
+1. Register a normal writer or employer account and confirm its email.
+2. In the Supabase SQL Editor, run the statement below after replacing the
+   example address with the exact email used for that account:
+
+   ```sql
+   insert into private.admin_users (user_id)
+   select id
+   from auth.users
+   where lower(email) = lower('you@example.com')
+   on conflict (user_id) do nothing;
+   ```
+
+3. Sign in to the website and open `/admin`.
+
+To revoke access, remove that account from the private admin table:
+
+```sql
+delete from private.admin_users
+where user_id = (
+  select id from auth.users where lower(email) = lower('you@example.com')
+);
+```
+
+Never expose or grant administrator access from the public signup form.
+Payments are not connected, so the console intentionally does not display
+payment or revenue data.
 
 Signup and login use Supabase Auth. Email confirmations exchange their
 one-time code through the server-side callback, and authenticated sessions
@@ -37,7 +72,8 @@ are refreshed using the Next.js 16 `proxy.ts` convention. User profile roles
 are stored in Postgres and cannot be changed through the profile update policy.
 
 The public job listings are still sample content; job posting, applications,
-messaging, payments, and social sign-in are not connected yet. Do not put
-database passwords, connection strings, service-role keys, or other secrets in
-the browser or commit them to Git. The database password previously shared
-during setup must be rotated before it is used.
+messaging, payments, and social sign-in are not connected yet. The admin
+console's job and application queues will populate when those records are
+created. Do not put database passwords, connection strings, service-role keys,
+or other secrets in the browser or commit them to Git. The database password
+previously shared during setup must be rotated before it is used.
