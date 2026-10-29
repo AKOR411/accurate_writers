@@ -25,7 +25,10 @@ Open [http://localhost:3000](http://localhost:3000). Run `npm run lint` and
 4. Set `NEXT_PUBLIC_SITE_URL` to the local or deployed site origin.
    Configure `SUPABASE_URL` and `SUPABASE_ANON_KEY` separately in every Vercel
    project that deploys this app; environment variables are not shared between
-   the public frontend and the admin project. Redeploy after changing them.
+   the public frontend and the admin project. Set `NEXT_PUBLIC_SITE_URL` to
+   `https://accurate-writers-ndxu.vercel.app` in the frontend Production
+   environment, and to that same public frontend URL in the admin project's
+   Production environment. Redeploy after changing them.
 5. Apply `supabase/migrations/20261029000000_create_profiles.sql` in the
    Supabase SQL Editor. It creates account profiles, a role enum, a profile
    trigger, and row-level security policies.
