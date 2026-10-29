@@ -46,6 +46,10 @@ export async function proxy(request: NextRequest) {
     request.headers.get("host") ?? request.headers.get("x-forwarded-host");
   const isAdminPortal = isAdminHost(requestHost ?? request.nextUrl.hostname);
 
+  if (isAdminPortal && pathname === "/") {
+    return NextResponse.redirect(new URL("/login", request.url));
+  }
+
   if (
     isAdminPortal &&
     (pathname === "/dashboard" || pathname.startsWith("/dashboard/"))
