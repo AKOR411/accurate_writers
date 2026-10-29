@@ -21,8 +21,9 @@ export default function RegisterPage() {
 async function RegisterPortalContent() {
   const requestHeaders = await headers();
   const isAdminPortal = isAdminHost(
-    requestHeaders.get("host") ?? requestHeaders.get("x-forwarded-host"),
+    requestHeaders.get("x-forwarded-host") ?? requestHeaders.get("host"),
   );
+  const homeHref = process.env.NEXT_PUBLIC_SITE_URL ?? "/";
 
-  return <SignupFlow isAdminPortal={isAdminPortal} />;
+  return <SignupFlow isAdminPortal={isAdminPortal} homeHref={homeHref} />;
 }

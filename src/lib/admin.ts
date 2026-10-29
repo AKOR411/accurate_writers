@@ -1,7 +1,9 @@
 import "server-only";
 
+import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { isAdminHost } from "@/lib/admin-host";
 import type { Database } from "@/lib/supabase/database.types";
 import { createReadOnlyClient } from "@/lib/supabase/server";
 import { getSupabaseConfig } from "@/lib/supabase/config";
@@ -16,7 +18,12 @@ export async function assertAdmin(
 
   const userId = claims?.claims?.sub;
   if (!userId) {
-    redirect("/register?mode=login");
+    const requestHeaders = await headers();
+    const host =
+      requestHeaders.get("x-forwarded-host")?.split(",")[0].trim() ??
+      requestHeaders.get("host") ??
+      null;
+    redirect(isAdminHost(host) ? "/login" : "/register?mode=login");
   }
 
   const { data: isAdmin, error: adminError } = await supabase.rpc("is_admin");
@@ -25,7 +32,14 @@ export async function assertAdmin(
   }
 
   if (!isAdmin) {
-    redirect("/dashboard");
+    const requestHeaders = await headers();
+    const host =
+      requestHeaders.get("x-forwarded-host")?.split(",")[0].trim() ??
+      requestHeaders.get("host") ??
+      null;
+    redirect(
+      isAdminHost(host) ? "/login?error=unauthorized" : "/dashboard",
+    );
   }
 
   return userId;

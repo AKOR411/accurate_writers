@@ -49,9 +49,11 @@ on the existing Vercel project:
    Keep `NEXT_PUBLIC_SITE_URL` set to the main website origin, such as
    `https://accuratewriters.com`, not the admin hostname.
 
-The admin hostname routes to the protected admin console. Sign in on that
-hostname; authentication cookies remain scoped to that hostname, so the main
-website and admin subdomain have separate sign-in sessions.
+The admin hostname routes directly to the administrator-only login page at
+`/login`, then to the protected console after sign-in. Public writer/employer
+registration remains on the main website. Authentication cookies remain scoped
+to the admin hostname, so the main website and admin portal have separate
+sign-in sessions.
 
 To grant the first administrator:
 

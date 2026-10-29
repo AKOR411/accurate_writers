@@ -11,8 +11,10 @@ type FlowStep = "role" | "details";
 
 export default function SignupFlow({
   isAdminPortal = false,
+  homeHref = "/",
 }: {
   isAdminPortal?: boolean;
+  homeHref?: string;
 }) {
   const searchParams = useSearchParams();
   const requestedRole: AccountRole =
@@ -31,6 +33,9 @@ export default function SignupFlow({
     }
     if (error === "confirmation") {
       return "That confirmation link is invalid or expired. Sign in or request a new confirmation email.";
+    }
+    if (error === "unauthorized") {
+      return "This account does not have administrator access.";
     }
     return "";
   });
@@ -54,7 +59,7 @@ export default function SignupFlow({
   return (
     <div className="register-page">
       <header className="register-header">
-        <Link className="brand" href="/" aria-label="Accurate Writers home">
+        <Link className="brand" href={homeHref} aria-label="Accurate Writers home">
           <span className="brand-mark" aria-hidden="true">
             <svg viewBox="0 0 32 32" fill="none">
               <path

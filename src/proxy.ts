@@ -12,6 +12,10 @@ function getAdminRewritePath(request: NextRequest): string | null {
   }
 
   const { pathname } = request.nextUrl;
+  if (pathname === "/login") {
+    return "/admin-login";
+  }
+
   if (
     pathname.startsWith("/_next/") ||
     pathname.startsWith("/api/") ||
@@ -23,6 +27,7 @@ function getAdminRewritePath(request: NextRequest): string | null {
     pathname.startsWith("/auth/") ||
     pathname === "/register" ||
     pathname.startsWith("/register/") ||
+    pathname === "/admin-login" ||
     pathname === "/dashboard" ||
     pathname.startsWith("/dashboard/") ||
     pathname === "/admin" ||
@@ -50,10 +55,25 @@ export async function proxy(request: NextRequest) {
 
   if (
     isAdminPortal &&
-    pathname === "/register" &&
-    request.nextUrl.searchParams.get("mode") === "signup"
+    (pathname === "/register" || pathname.startsWith("/register/"))
   ) {
-    return NextResponse.redirect(new URL("/register?mode=login", request.url));
+    const query = request.nextUrl.searchParams.toString();
+    return NextResponse.redirect(
+      new URL(`/login${query ? `?${query}` : ""}`, request.url),
+    );
+  }
+
+  const isAdminLoginPath =
+    isAdminPortal && (pathname === "/login" || pathname === "/admin-login");
+  if (isAdminLoginPath) {
+    const url = request.nextUrl.clone();
+    url.pathname = pathname === "/login" ? "/admin-login" : pathname;
+    const requestHeaders = new Headers(request.headers);
+    requestHeaders.set(
+      "x-forwarded-host",
+      requestHost?.split(",")[0].trim() ?? request.nextUrl.hostname,
+    );
+    return NextResponse.rewrite(url, { request: { headers: requestHeaders } });
   }
 
   const isAdminRoute =
@@ -78,7 +98,12 @@ export async function proxy(request: NextRequest) {
 
     const url = request.nextUrl.clone();
     url.pathname = adminRewritePath;
-    return NextResponse.rewrite(url, { request });
+    const requestHeaders = new Headers(request.headers);
+    requestHeaders.set(
+      "x-forwarded-host",
+      requestHost?.split(",")[0].trim() ?? request.nextUrl.hostname,
+    );
+    return NextResponse.rewrite(url, { request: { headers: requestHeaders } });
   };
   let response = createResponse();
   const supabase = createServerClient<Database>(config.url, config.anonKey, {
@@ -109,7 +134,7 @@ export async function proxy(request: NextRequest) {
   }
 
   if (isAdminRoute && !data?.claims) {
-    return NextResponse.redirect(new URL("/register?mode=login", request.url));
+    return NextResponse.redirect(new URL("/login", request.url));
   }
 
   return response;
