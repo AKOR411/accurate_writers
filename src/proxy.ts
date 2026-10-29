@@ -3,13 +3,74 @@ import { NextResponse, type NextRequest } from "next/server";
 import { getSupabaseConfig } from "./lib/supabase/config";
 import type { Database } from "./lib/supabase/database.types";
 
+function getAdminRewritePath(request: NextRequest): string | null {
+  const adminHostname = process.env.ADMIN_HOSTNAME?.trim().toLowerCase();
+  const requestHost =
+    request.headers.get("host") ?? request.headers.get("x-forwarded-host");
+  let requestHostname = request.nextUrl.hostname.toLowerCase();
+  if (requestHost) {
+    try {
+      requestHostname = new URL(`https://${requestHost}`).hostname.toLowerCase();
+    } catch {
+      requestHostname = "";
+    }
+  }
+
+  if (!adminHostname || requestHostname !== adminHostname) {
+    return null;
+  }
+
+  const { pathname } = request.nextUrl;
+  if (
+    pathname.startsWith("/_next/") ||
+    pathname.startsWith("/api/") ||
+    pathname === "/api" ||
+    pathname === "/favicon.ico" ||
+    pathname === "/robots.txt" ||
+    pathname === "/sitemap.xml" ||
+    pathname === "/auth" ||
+    pathname.startsWith("/auth/") ||
+    pathname === "/register" ||
+    pathname.startsWith("/register/") ||
+    pathname === "/dashboard" ||
+    pathname.startsWith("/dashboard/") ||
+    pathname === "/admin" ||
+    pathname.startsWith("/admin/")
+  ) {
+    return null;
+  }
+
+  return pathname === "/" ? "/admin" : `/admin${pathname}`;
+}
+
 export async function proxy(request: NextRequest) {
+  const adminRewritePath = getAdminRewritePath(request);
+  const pathname = request.nextUrl.pathname;
+  const isAdminRoute =
+    pathname === "/admin" ||
+    pathname.startsWith("/admin/") ||
+    adminRewritePath === "/admin" ||
+    adminRewritePath?.startsWith("/admin/") === true;
+
+  if (!isAdminRoute && pathname !== "/dashboard" && !pathname.startsWith("/dashboard/")) {
+    return NextResponse.next({ request });
+  }
+
   const config = getSupabaseConfig();
   if (!config.configured) {
     return NextResponse.next({ request });
   }
 
-  let response = NextResponse.next({ request });
+  const createResponse = () => {
+    if (!adminRewritePath) {
+      return NextResponse.next({ request });
+    }
+
+    const url = request.nextUrl.clone();
+    url.pathname = adminRewritePath;
+    return NextResponse.rewrite(url, { request });
+  };
+  let response = createResponse();
   const supabase = createServerClient<Database>(config.url, config.anonKey, {
     cookies: {
       getAll() {
@@ -20,7 +81,7 @@ export async function proxy(request: NextRequest) {
           request.cookies.set(name, value);
         });
 
-        response = NextResponse.next({ request });
+        response = createResponse();
         cookiesToSet.forEach(({ name, value, options }) => {
           response.cookies.set(name, value, options);
         });
@@ -37,7 +98,7 @@ export async function proxy(request: NextRequest) {
     throw new Error(`Could not verify the Supabase session: ${error.message}`);
   }
 
-  if (!data?.claims) {
+  if (isAdminRoute && !data?.claims) {
     return NextResponse.redirect(new URL("/register?mode=login", request.url));
   }
 
@@ -45,5 +106,5 @@ export async function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/dashboard/:path*"],
+  matcher: ["/:path*"],
 };

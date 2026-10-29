@@ -11,6 +11,7 @@ export const instant = false;
 export default async function AdminLayout({
   children,
 }: LayoutProps<"/admin">) {
+  const publicSiteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "/";
   const config = getSupabaseConfig();
   if (!config.configured) {
     redirect("/register?error=configuration");
@@ -31,7 +32,7 @@ export default async function AdminLayout({
   return (
     <div className="admin-shell">
       <aside className="admin-sidebar">
-        <Link className="admin-brand" href="/">
+        <Link className="admin-brand" href={publicSiteUrl}>
           <span className="brand-mark" aria-hidden="true">✎</span>
           <span>Accurate Writers</span>
         </Link>

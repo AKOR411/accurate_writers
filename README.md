@@ -37,7 +37,23 @@ Open [http://localhost:3000](http://localhost:3000). Run `npm run lint` and
 ## Admin access
 
 The admin console is served by this app at `/admin`; it is not a separate
-deployment. To grant the first administrator:
+deployment. To open it on `admin.accuratewriters.com`, configure the subdomain
+on the existing Vercel project:
+
+1. In Vercel, open the project's **Settings → Domains** and add
+   `admin.accuratewriters.com`.
+2. Follow Vercel's domain verification and DNS instructions. Add the exact DNS
+   record Vercel shows at the domain's DNS provider.
+3. In the Vercel project's **Settings → Environment Variables**, set
+   `ADMIN_HOSTNAME` to `admin.accuratewriters.com` for Production and redeploy.
+   Keep `NEXT_PUBLIC_SITE_URL` set to the main website origin, such as
+   `https://accuratewriters.com`, not the admin hostname.
+
+The admin hostname routes to the protected admin console. Sign in on that
+hostname; authentication cookies remain scoped to that hostname, so the main
+website and admin subdomain have separate sign-in sessions.
+
+To grant the first administrator:
 
 1. Register a normal writer or employer account and confirm its email.
 2. In the Supabase SQL Editor, run the statement below after replacing the

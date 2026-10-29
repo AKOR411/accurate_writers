@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import type { AuthFormState } from "@/lib/auth-form";
 import { getSupabaseConfig } from "@/lib/supabase/config";
@@ -125,8 +126,22 @@ export async function login(
     return { error: error.message };
   }
 
+  const requestHeaders = await headers();
+  const host =
+    requestHeaders.get("host") ??
+    requestHeaders.get("x-forwarded-host")?.split(",")[0].trim();
+  let hostname = "";
+  if (host) {
+    try {
+      hostname = new URL(`https://${host}`).hostname.toLowerCase();
+    } catch {
+      hostname = "";
+    }
+  }
+
+  const adminHostname = process.env.ADMIN_HOSTNAME?.trim().toLowerCase();
   revalidatePath("/", "layout");
-  redirect("/dashboard");
+  redirect(hostname && hostname === adminHostname ? "/admin" : "/dashboard");
 }
 
 export async function logout(): Promise<void> {

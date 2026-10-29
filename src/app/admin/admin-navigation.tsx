@@ -15,6 +15,7 @@ const navigation = [
 
 export default function AdminNavigation() {
   const pathname = usePathname();
+  const publicSiteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "/";
 
   return (
     <nav className="admin-nav" aria-label="Admin navigation">
@@ -47,7 +48,7 @@ export default function AdminNavigation() {
         );
       })}
       <span className="admin-nav-label">WORKSPACE</span>
-      <Link className="admin-nav-link" href="/">
+      <Link className="admin-nav-link" href={publicSiteUrl}>
         <span className="admin-nav-icon" aria-hidden="true">↗</span>
         <span>View website</span>
       </Link>
