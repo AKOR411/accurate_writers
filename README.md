@@ -35,9 +35,11 @@ Open [http://localhost:3000](http://localhost:3000). Run `npm run lint` and
 6. Apply `supabase/migrations/20261029000001_admin_console.sql` in the SQL
    Editor after the profiles migration. It adds protected job and application
    records and the private administrator access list.
-7. In **Authentication → URL Configuration**, set the Site URL to the site
-   origin and allow `/auth/callback` as a redirect URL. Keep email confirmation
-   enabled for production.
+7. In **Authentication → URL Configuration**, set the production Site URL to
+   the public website origin and allow the full public URL ending in
+   `/auth/callback` as a redirect URL. Keep email confirmation enabled for
+   production. After confirming an email, writers and employers are returned to
+   the public login form to sign in.
 8. Restart the development server after changing `.env.local`.
 
 ## Admin access
@@ -98,9 +100,10 @@ Payments are not connected, so the console intentionally does not display
 payment or revenue data.
 
 Signup and login use Supabase Auth. Email confirmations exchange their
-one-time code through the server-side callback, and authenticated sessions
-are refreshed using the Next.js 16 `proxy.ts` convention. User profile roles
-are stored in Postgres and cannot be changed through the profile update policy.
+one-time code through the server-side callback, clear the temporary session,
+and return users to the public login form. Authenticated sessions are refreshed
+using the Next.js 16 `proxy.ts` convention. User profile roles are stored in
+Postgres and cannot be changed through the profile update policy.
 
 The public job listings are still sample content; job posting, applications,
 messaging, payments, and social sign-in are not connected yet. The admin

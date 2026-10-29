@@ -31,7 +31,7 @@ function getEmailRedirectUrl(): string | null {
       return null;
     }
 
-    return new URL("/auth/callback?next=/dashboard", url).toString();
+    return new URL("/auth/callback", url).toString();
   } catch {
     return null;
   }

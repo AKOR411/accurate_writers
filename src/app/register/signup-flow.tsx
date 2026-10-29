@@ -37,8 +37,12 @@ export default function SignupFlow({
     if (error === "unauthorized") {
       return "This account does not have administrator access.";
     }
+    if (error === "session-cleanup") {
+      return "Your email is confirmed, but we could not clear the temporary confirmation session. Please sign out before logging in.";
+    }
     return "";
   });
+  const emailConfirmed = searchParams.get("confirmed") === "1";
   const [actionState, formAction, isPending] = useActionState<AuthFormState, FormData>(
     mode === "login" ? login : signup,
     {},
@@ -219,6 +223,11 @@ export default function SignupFlow({
                     required
                   />
                 </label>
+                {mode === "login" && emailConfirmed && !callbackNotice && (
+                  <p className="auth-success" role="status">
+                    Email confirmed. You can now sign in with the account you created.
+                  </p>
+                )}
                 {(callbackNotice || actionState.error) && (
                   <p className="auth-notice" role="alert">
                     {actionState.error ?? callbackNotice}
