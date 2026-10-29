@@ -108,6 +108,13 @@ export async function signup(
     return { error: "Supabase did not return a user after signup. Please try again." };
   }
 
+  if (!data.user.identities?.length) {
+    return {
+      error:
+        "An account with this email address already exists. Log in to that account, or use a different email address to register another account.",
+    };
+  }
+
   if (data.session) {
     revalidatePath("/", "layout");
     redirect("/dashboard");

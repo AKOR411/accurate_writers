@@ -113,6 +113,11 @@ one-time code through the server-side callback, clear the temporary session,
 and return users to the public login form. Authenticated sessions are refreshed
 using the Next.js 16 `proxy.ts` convention. User profile roles are stored in
 Postgres and cannot be changed through the profile update policy.
+Each email address belongs to one Auth account and one selected profile role.
+The signup selection is saved as `writer` or `employer` by the database's
+`handle_new_user` trigger. To register separate writer and employer accounts,
+use a different email address for each; signing up again with the same address
+shows an existing-account error.
 
 The public job listings are still sample content; job posting, applications,
 messaging, payments, and social sign-in are not connected yet. The admin
