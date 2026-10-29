@@ -35,12 +35,14 @@ Open [http://localhost:3000](http://localhost:3000). Run `npm run lint` and
 6. Apply `supabase/migrations/20261029000001_admin_console.sql` in the SQL
    Editor after the profiles migration. It adds protected job and application
    records and the private administrator access list.
-7. In **Authentication → URL Configuration**, set the production Site URL to
+7. Apply `supabase/migrations/20261029000002_employer_applicant_profiles.sql`
+   to allow employers to see the names of writers who apply to their jobs.
+8. In **Authentication → URL Configuration**, set the production Site URL to
    the public website origin and allow the full public URL ending in
    `/auth/callback` as a redirect URL. Keep email confirmation enabled for
    production. After confirming an email, writers and employers are returned to
    the public login form to sign in.
-8. Restart the development server after changing `.env.local`.
+9. Restart the development server after changing `.env.local`.
 
 ### Email confirmation rate limits
 
@@ -119,9 +121,12 @@ The signup selection is saved as `writer` or `employer` by the database's
 use a different email address for each; signing up again with the same address
 shows an existing-account error.
 
-The public job listings are still sample content; job posting, applications,
-messaging, payments, and social sign-in are not connected yet. The admin
-console's job and application queues will populate when those records are
-created. Do not put database passwords, connection strings, service-role keys,
-or other secrets in the browser or commit them to Git. The database password
-previously shared during setup must be rotated before it is used.
+The public homepage job preview is sample content. The signed-in writer
+dashboard lists approved Supabase jobs, submits and tracks applications, and
+allows pending applications to be withdrawn. The employer dashboard posts
+jobs for administrator approval and manages applicants and listing status.
+Messaging, payments, and social sign-in are not connected yet. Apply the
+dashboard migrations above to the same Supabase project used by the site. Do
+not put database passwords, connection strings, service-role keys, or other
+secrets in the browser or commit them to Git. The database password previously
+shared during setup must be rotated before it is used.
