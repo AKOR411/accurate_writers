@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { connection } from "next/server";
 import { logout } from "@/app/actions/auth";
 import AdminNavigation from "./admin-navigation";
 import { assertAdmin } from "@/lib/admin";
@@ -11,6 +12,8 @@ export const instant = false;
 export default async function AdminLayout({
   children,
 }: LayoutProps<"/admin">) {
+  await connection();
+
   const publicSiteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "/";
   const config = getSupabaseConfig();
   if (!config.configured) {
