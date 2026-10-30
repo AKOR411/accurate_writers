@@ -121,6 +121,25 @@ The signup selection is saved as `writer` or `employer` by the database's
 use a different email address for each; signing up again with the same address
 shows an existing-account error.
 
+### Employer account setup
+
+Employers create their own accounts from the public **Create your account**
+form by selecting **I'm an Employer**. The signup action sends that role to
+Supabase Auth, and the profile migration's `handle_new_user` trigger creates
+the corresponding `public.profiles` row with the `employer` role. Apply the
+profile and dashboard migrations above before testing employer registration;
+do not create users by inserting directly into `auth.users`.
+
+To confirm that an employer account was recorded, run this query in the
+Supabase SQL Editor:
+
+```sql
+select email, full_name, role, created_at
+from public.profiles
+where role = 'employer'
+order by created_at desc;
+```
+
 The public homepage job preview is sample content. The signed-in writer
 dashboard lists approved Supabase jobs, submits and tracks applications, and
 allows pending applications to be withdrawn. The employer dashboard posts

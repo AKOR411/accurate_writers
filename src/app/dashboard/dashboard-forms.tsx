@@ -33,7 +33,7 @@ export function CreateJobForm() {
   );
 
   return (
-    <details className="dashboard-disclosure">
+    <details className="dashboard-disclosure" open>
       <summary>Post a new writing job <span aria-hidden="true">＋</span></summary>
       <form action={formAction} className="dashboard-form">
         <div className="dashboard-form-grid">

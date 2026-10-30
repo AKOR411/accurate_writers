@@ -8,6 +8,7 @@ import {
   ReviewApplicationForm,
   WithdrawApplicationForm,
 } from "@/app/dashboard/dashboard-forms";
+import DashboardSidebar from "@/app/dashboard/dashboard-sidebar";
 import { getSupabaseConfig } from "@/lib/supabase/config";
 import type {
   AccountRole,
@@ -64,26 +65,6 @@ function StatusBadge({ status }: { status: JobStatus | ApplicationStatus }) {
     <span className={`dashboard-status status-${status}`}>
       {status.replaceAll("_", " ")}
     </span>
-  );
-}
-
-function PageHeading({
-  role,
-  fullName,
-}: {
-  role: AccountRole;
-  fullName: string;
-}) {
-  return (
-    <>
-      <p className="section-kicker">{roleLabels[role]} DASHBOARD</p>
-      <h1>Welcome, {fullName}.</h1>
-      <p className="dashboard-intro">
-        {role === "writer"
-          ? "Find writing opportunities, track your applications, and connect with clients."
-          : "Post writing projects, review applicants, and manage your opportunities."}
-      </p>
-    </>
   );
 }
 
@@ -225,268 +206,410 @@ export default async function DashboardPage() {
     (application) => !applicantNames.has(application.writer_id),
   );
   const employerJobTitles = new Map(employerJobs.map((job) => [job.id, job.title]));
+  const distinctWriters = new Set(employerApplications.map((application) => application.writer_id));
+  const writerMetrics = [
+    { label: "Applied Jobs", value: writerApplications.length, detail: "Applications submitted" },
+    {
+      label: "Accepted Jobs",
+      value: writerApplications.filter((application) => application.status === "accepted").length,
+      detail: "Offers accepted",
+    },
+    {
+      label: "Shortlisted",
+      value: writerApplications.filter((application) => application.status === "shortlisted").length,
+      detail: "Applications shortlisted",
+    },
+    { label: "Total Earnings", value: "—", detail: "Payments not connected" },
+  ];
+  const employerMetrics = [
+    {
+      label: "Active Jobs",
+      value: employerJobs.filter((job) => job.status === "approved").length,
+      detail: "Approved listings",
+    },
+    { label: "Total Applications", value: employerApplications.length, detail: "Across your jobs" },
+    { label: "Writers", value: distinctWriters.size, detail: "Unique applicants" },
+    { label: "Pending Payments", value: "—", detail: "Payments not connected" },
+  ];
 
   return (
-    <main className="dashboard-page">
-      <header className="dashboard-header">
-        <Link className="brand" href="/">
-          <span className="brand-mark" aria-hidden="true">✎</span>
-          <span>Accurate Writers</span>
-        </Link>
-        <form action={logout}>
-          <button className="dashboard-signout" type="submit">Sign out</button>
-        </form>
-      </header>
+    <div className={`dashboard-app-shell role-${profile.role}`}>
+      <DashboardSidebar role={profile.role} />
+      <main className="dashboard-main">
+        <header className="dashboard-topbar">
+          <div className="dashboard-topbar-crumb">
+            <span>Workspace</span>
+            <span aria-hidden="true">/</span>
+            <strong>{roleLabels[profile.role]} dashboard</strong>
+          </div>
+          <div className="dashboard-account">
+            <span className="dashboard-account-avatar" aria-hidden="true">
+              {profile.full_name.trim().slice(0, 1).toUpperCase()}
+            </span>
+            <span className="dashboard-account-name">
+              <strong>{profile.full_name}</strong>
+              <small>{roleLabels[profile.role]}</small>
+            </span>
+          </div>
+        </header>
 
-      <section className="dashboard-content">
-        <PageHeading fullName={profile.full_name} role={profile.role} />
+        <section className="dashboard-content" id="overview">
+          <div className="dashboard-welcome">
+            <div>
+              <p className="section-kicker">{roleLabels[profile.role]} DASHBOARD</p>
+              <h1>Welcome, {profile.full_name}.</h1>
+              <p className="dashboard-intro">
+                {profile.role === "writer"
+                  ? "Here’s your writing activity and the latest opportunities."
+                  : "Here’s an overview of your jobs and the writers interested in them."}
+              </p>
+            </div>
+            <span className="dashboard-role-pill">{roleLabels[profile.role]}</span>
+          </div>
 
-        <div className="dashboard-metrics">
+          <div className="dashboard-metrics">
+            {(profile.role === "writer" ? writerMetrics : employerMetrics).map((metric) => (
+              <article key={metric.label}>
+                <span>{metric.label}</span>
+                <strong>{metric.value}</strong>
+                <small>{metric.detail}</small>
+              </article>
+            ))}
+          </div>
+
           {profile.role === "writer" ? (
-            <>
-              <article>
-                <span>AVAILABLE JOBS</span>
-                <strong>{writerJobs.length}</strong>
-                <small>Approved opportunities</small>
-              </article>
-              <article>
-                <span>MY APPLICATIONS</span>
-                <strong>{writerApplications.length}</strong>
-                <small>Submitted applications</small>
-              </article>
-              <article>
-                <span>ACCEPTED</span>
-                <strong>{writerApplications.filter((application) => application.status === "accepted").length}</strong>
-                <small>Applications accepted</small>
-              </article>
-            </>
-          ) : (
-            <>
-              <article>
-                <span>MY JOBS</span>
-                <strong>{employerJobs.length}</strong>
-                <small>Listings you have posted</small>
-              </article>
-              <article>
-                <span>APPLICANTS</span>
-                <strong>{employerApplications.length}</strong>
-                <small>Applications received</small>
-              </article>
-              <article>
-                <span>AWAITING REVIEW</span>
-                <strong>{employerApplications.filter((application) => application.status === "pending").length}</strong>
-                <small>Pending applications</small>
-              </article>
-            </>
-          )}
-        </div>
-
-        {profile.role === "writer" ? (
-          <div className="dashboard-sections">
-            <section className="dashboard-panel">
-              <div className="dashboard-panel-heading">
-                <div>
-                  <p className="dashboard-eyebrow">FIND YOUR NEXT PROJECT</p>
-                  <h2>Writing opportunities</h2>
+            <div className="dashboard-overview-grid">
+              <section className="dashboard-panel dashboard-recent-panel" id="find-jobs">
+                <div className="dashboard-panel-heading">
+                  <div>
+                    <p className="dashboard-eyebrow">OPPORTUNITIES</p>
+                    <h2>Latest jobs</h2>
+                  </div>
+                  <span className="dashboard-count">{writerJobs.length} available</span>
                 </div>
-                <span className="dashboard-count">{writerJobs.length} open</span>
-              </div>
-              {writerJobs.length ? (
-                <div className="dashboard-list">
-                  {writerJobs.map((job) => {
-                    const hasApplied = appliedJobIds.has(job.id);
-                    return (
+                {writerJobs.length ? (
+                  <div className="dashboard-table-scroll">
+                    <table className="dashboard-table">
+                      <thead>
+                        <tr>
+                          <th scope="col">Title</th>
+                          <th scope="col">Category</th>
+                          <th scope="col">Budget</th>
+                          <th scope="col">Deadline</th>
+                          <th scope="col">Status</th>
+                          <th scope="col"><span className="visually-hidden">Actions</span></th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {writerJobs.slice(0, 5).map((job) => {
+                          const application = writerApplications.find((item) => item.job_id === job.id);
+                          return (
+                            <tr key={job.id}>
+                              <td className="dashboard-table-title">{job.title}</td>
+                              <td>{job.category}</td>
+                              <td>{formatBudget(job.budget_min, job.budget_max, job.currency)}</td>
+                              <td>{formatDate(job.deadline)}</td>
+                              <td>
+                                {application
+                                  ? <StatusBadge status={application.status} />
+                                  : <StatusBadge status="approved" />}
+                              </td>
+                              <td>
+                                {application ? (
+                                  <span className="dashboard-applied-label">Applied</span>
+                                ) : (
+                                  <a className="dashboard-table-link" href={`#job-${job.id}`}>View</a>
+                                )}
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                ) : (
+                  <div className="dashboard-empty compact">
+                    <p>Approved jobs from employers will appear here.</p>
+                  </div>
+                )}
+                <a className="dashboard-view-all" href="#all-jobs">View all jobs <span aria-hidden="true">→</span></a>
+              </section>
+
+              <aside className="dashboard-panel dashboard-quick-panel">
+                <p className="dashboard-eyebrow">GET STARTED</p>
+                <h2>Quick actions</h2>
+                <a className="dashboard-quick-primary" href="#all-jobs">Find a writing job <span aria-hidden="true">→</span></a>
+                <a className="dashboard-quick-link" href="#my-applications"><span aria-hidden="true">▣</span> View my applications</a>
+                <span className="dashboard-quick-disabled"><span aria-hidden="true">▤</span> My articles <small>Soon</small></span>
+                <span className="dashboard-quick-disabled"><span aria-hidden="true">＄</span> Payments <small>Soon</small></span>
+              </aside>
+            </div>
+          ) : (
+            <div className="dashboard-overview-grid">
+              <section className="dashboard-panel dashboard-recent-panel" id="my-jobs">
+                <div className="dashboard-panel-heading">
+                  <div>
+                    <p className="dashboard-eyebrow">YOUR OPPORTUNITIES</p>
+                    <h2>Recent jobs</h2>
+                  </div>
+                  <span className="dashboard-count">{employerJobs.length} total</span>
+                </div>
+                {employerJobs.length ? (
+                  <div className="dashboard-table-scroll">
+                    <table className="dashboard-table">
+                      <thead>
+                        <tr>
+                          <th scope="col">Title</th>
+                          <th scope="col">Applications</th>
+                          <th scope="col">Status</th>
+                          <th scope="col">Posted on</th>
+                          <th scope="col"><span className="visually-hidden">Actions</span></th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {employerJobs.slice(0, 5).map((job) => (
+                          <tr key={job.id}>
+                            <td className="dashboard-table-title">{job.title}</td>
+                            <td>{employerApplications.filter((application) => application.job_id === job.id).length}</td>
+                            <td><StatusBadge status={job.status} /></td>
+                            <td>{formatDate(job.created_at)}</td>
+                            <td>
+                              {["pending", "approved"].includes(job.status) && (
+                                <CloseJobForm jobId={job.id} />
+                              )}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                ) : (
+                  <div className="dashboard-empty compact">
+                    <p>Jobs you post will appear here with their review status and application count.</p>
+                  </div>
+                )}
+                <a className="dashboard-view-all" href="#all-jobs">View all jobs <span aria-hidden="true">→</span></a>
+              </section>
+
+              <aside className="dashboard-panel dashboard-quick-panel">
+                <p className="dashboard-eyebrow">MANAGE YOUR WORK</p>
+                <h2>Quick actions</h2>
+                <a className="dashboard-quick-primary" href="#post-job">Post a new job <span aria-hidden="true">→</span></a>
+                <a className="dashboard-quick-link" href="#applications"><span aria-hidden="true">▣</span> View applications</a>
+                <a className="dashboard-quick-link" href="#writers"><span aria-hidden="true">♙</span> Manage writers</a>
+                <span className="dashboard-quick-disabled"><span aria-hidden="true">＄</span> View payments <small>Soon</small></span>
+              </aside>
+            </div>
+          )}
+
+          {profile.role === "writer" ? (
+            <div className="dashboard-sections">
+              <section className="dashboard-panel" id="all-jobs">
+                <div className="dashboard-panel-heading">
+                  <div>
+                    <p className="dashboard-eyebrow">FIND YOUR NEXT PROJECT</p>
+                    <h2>All available jobs</h2>
+                  </div>
+                  <span className="dashboard-count">{writerJobs.length} open</span>
+                </div>
+                {writerJobs.length ? (
+                  <div className="dashboard-list">
+                    {writerJobs.map((job) => {
+                      const hasApplied = appliedJobIds.has(job.id);
+                      return (
+                        <article className="dashboard-listing" id={`job-${job.id}`} key={job.id}>
+                          <div className="dashboard-listing-heading">
+                            <div>
+                              <span className="dashboard-category">{job.category}</span>
+                              <h3>{job.title}</h3>
+                            </div>
+                            <strong className="dashboard-budget">
+                              {formatBudget(job.budget_min, job.budget_max, job.currency)}
+                            </strong>
+                          </div>
+                          <p className="dashboard-description">{job.description}</p>
+                          <div className="dashboard-listing-meta">
+                            <span>{job.word_count ? `${job.word_count.toLocaleString()} words` : "Word count flexible"}</span>
+                            <span>Deadline: {formatDate(job.deadline)}</span>
+                            <span>Posted {formatDate(job.created_at)}</span>
+                          </div>
+                          {hasApplied ? (
+                            <span className="dashboard-applied-label">Application submitted</span>
+                          ) : (
+                            <ApplyToJobForm currency={job.currency} jobId={job.id} />
+                          )}
+                        </article>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <div className="dashboard-empty">
+                    <h3>No approved jobs available yet</h3>
+                    <p>New opportunities will appear here as soon as employers post them and they are approved.</p>
+                  </div>
+                )}
+              </section>
+
+              <section className="dashboard-panel" id="my-applications">
+                <div className="dashboard-panel-heading">
+                  <div>
+                    <p className="dashboard-eyebrow">KEEP TRACK</p>
+                    <h2>Your applications</h2>
+                  </div>
+                  <span className="dashboard-count">{writerApplications.length} total</span>
+                </div>
+                {writerApplications.length ? (
+                  <div className="dashboard-application-list">
+                    {writerApplications.map((application) => (
+                      <article className="dashboard-application" key={application.id}>
+                        <div>
+                          <h3>{writerJobById.get(application.job_id)?.title ?? "Job listing no longer available"}</h3>
+                          <p>Applied {formatDate(application.created_at)}</p>
+                          {application.proposed_budget !== null && (
+                            <p>
+                              Proposed{" "}
+                              {formatBudget(
+                                application.proposed_budget,
+                                application.proposed_budget,
+                                writerJobById.get(application.job_id)?.currency ?? "KES",
+                              )}
+                            </p>
+                          )}
+                        </div>
+                        <div className="dashboard-application-actions">
+                          <StatusBadge status={application.status} />
+                          {application.status === "pending" && (
+                            <WithdrawApplicationForm applicationId={application.id} />
+                          )}
+                        </div>
+                      </article>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="dashboard-empty compact">
+                    <p>You haven&apos;t applied to a job yet. Browse the approved opportunities above to get started.</p>
+                  </div>
+                )}
+              </section>
+            </div>
+          ) : (
+            <div className="dashboard-sections">
+              <section className="dashboard-panel" id="post-job">
+                <div className="dashboard-panel-heading">
+                  <div>
+                    <p className="dashboard-eyebrow">CREATE AN OPPORTUNITY</p>
+                    <h2>Post a writing job</h2>
+                  </div>
+                </div>
+                <CreateJobForm />
+              </section>
+
+              <section className="dashboard-panel" id="all-jobs">
+                <div className="dashboard-panel-heading">
+                  <div>
+                    <p className="dashboard-eyebrow">YOUR LISTINGS</p>
+                    <h2>Manage jobs</h2>
+                  </div>
+                  <span className="dashboard-count">{employerJobs.length} total</span>
+                </div>
+                {employerJobs.length ? (
+                  <div className="dashboard-list">
+                    {employerJobs.map((job) => (
                       <article className="dashboard-listing" key={job.id}>
                         <div className="dashboard-listing-heading">
                           <div>
                             <span className="dashboard-category">{job.category}</span>
                             <h3>{job.title}</h3>
                           </div>
-                          <strong className="dashboard-budget">
-                            {formatBudget(job.budget_min, job.budget_max, job.currency)}
-                          </strong>
+                          <div className="dashboard-application-actions">
+                            <StatusBadge status={job.status} />
+                            {["pending", "approved"].includes(job.status) && (
+                              <CloseJobForm jobId={job.id} />
+                            )}
+                          </div>
                         </div>
                         <p className="dashboard-description">{job.description}</p>
                         <div className="dashboard-listing-meta">
+                          <span>{formatBudget(job.budget_min, job.budget_max, job.currency)}</span>
                           <span>{job.word_count ? `${job.word_count.toLocaleString()} words` : "Word count flexible"}</span>
                           <span>Deadline: {formatDate(job.deadline)}</span>
-                          <span>Posted {formatDate(job.created_at)}</span>
+                          <span>{employerApplications.filter((application) => application.job_id === job.id).length} applicants</span>
                         </div>
-                        {hasApplied ? (
-                          <span className="dashboard-applied-label">Application submitted</span>
-                        ) : (
-                          <ApplyToJobForm currency={job.currency} jobId={job.id} />
+                        {job.status === "pending" && (
+                          <p className="dashboard-moderation-note">Waiting for administrator approval before writers can see this listing.</p>
                         )}
                       </article>
-                    );
-                  })}
-                </div>
-              ) : (
-                <div className="dashboard-empty">
-                  <h3>No approved jobs available yet</h3>
-                  <p>New opportunities will appear here as soon as employers post them and they are approved.</p>
-                </div>
-              )}
-            </section>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="dashboard-empty">
+                    <h3>Your next great hire starts with a clear brief</h3>
+                    <p>Post a writing job above. You can track its approval status and review applications here.</p>
+                  </div>
+                )}
+              </section>
 
-            <section className="dashboard-panel">
-              <div className="dashboard-panel-heading">
-                <div>
-                  <p className="dashboard-eyebrow">KEEP TRACK</p>
-                  <h2>Your applications</h2>
+              <section className="dashboard-panel" id="applications">
+                <span id="writers" />
+                <div className="dashboard-panel-heading">
+                  <div>
+                    <p className="dashboard-eyebrow">REVIEW CANDIDATES</p>
+                    <h2>Applications received</h2>
+                  </div>
+                  <span className="dashboard-count">{employerApplications.length} total</span>
                 </div>
-                <span className="dashboard-count">{writerApplications.length} total</span>
-              </div>
-              {writerApplications.length ? (
-                <div className="dashboard-application-list">
-                  {writerApplications.map((application) => (
-                    <article className="dashboard-application" key={application.id}>
-                      <div>
-                        <h3>{writerJobById.get(application.job_id)?.title ?? "Job listing no longer available"}</h3>
-                        <p>Applied {formatDate(application.created_at)}</p>
-                        {application.proposed_budget !== null && (
-                          <p>
-                            Proposed{" "}
-                            {formatBudget(
-                              application.proposed_budget,
-                              application.proposed_budget,
-                              writerJobById.get(application.job_id)?.currency ?? "KES",
-                            )}
-                          </p>
-                        )}
-                      </div>
-                      <div className="dashboard-application-actions">
-                        <StatusBadge status={application.status} />
-                        {application.status === "pending" && (
-                          <WithdrawApplicationForm applicationId={application.id} />
-                        )}
-                      </div>
-                    </article>
-                  ))}
-                </div>
-              ) : (
-                <div className="dashboard-empty compact">
-                  <p>You haven&apos;t applied to a job yet. Browse the approved opportunities above to get started.</p>
-                </div>
-              )}
-            </section>
-          </div>
-        ) : (
-          <div className="dashboard-sections">
-            <section className="dashboard-panel">
-              <div className="dashboard-panel-heading">
-                <div>
-                  <p className="dashboard-eyebrow">CREATE AN OPPORTUNITY</p>
-                  <h2>Post a writing job</h2>
-                </div>
-              </div>
-              <CreateJobForm />
-            </section>
-
-            <section className="dashboard-panel">
-              <div className="dashboard-panel-heading">
-                <div>
-                  <p className="dashboard-eyebrow">YOUR LISTINGS</p>
-                  <h2>Manage jobs</h2>
-                </div>
-                <span className="dashboard-count">{employerJobs.length} total</span>
-              </div>
-              {employerJobs.length ? (
-                <div className="dashboard-list">
-                  {employerJobs.map((job) => (
-                    <article className="dashboard-listing" key={job.id}>
-                      <div className="dashboard-listing-heading">
-                        <div>
-                          <span className="dashboard-category">{job.category}</span>
-                          <h3>{job.title}</h3>
+                {hasApplicantProfileAccessGap && (
+                  <p className="auth-notice dashboard-setup-notice" role="status">
+                    Apply the <code>20261029000002_employer_applicant_profiles.sql</code> migration
+                    in Supabase to display applicant names.
+                  </p>
+                )}
+                {employerApplications.length ? (
+                  <div className="dashboard-application-list">
+                    {employerApplications.map((application) => (
+                      <article className="dashboard-applicant" key={application.id}>
+                        <div className="dashboard-applicant-heading">
+                          <div>
+                            <h3>{applicantNames.get(application.writer_id) ?? "Writer applicant"}</h3>
+                            <p>
+                              Applied to <strong>{employerJobTitles.get(application.job_id) ?? "your job"}</strong>
+                              {" · "}{formatDate(application.created_at)}
+                            </p>
+                          </div>
+                          <StatusBadge status={application.status} />
                         </div>
-                        <div className="dashboard-application-actions">
-                          <StatusBadge status={job.status} />
-                          {["pending", "approved"].includes(job.status) && (
-                            <CloseJobForm jobId={job.id} />
+                        <p className="dashboard-cover-letter">{application.cover_letter}</p>
+                        <div className="dashboard-applicant-footer">
+                          <span>
+                            Proposed budget:{" "}
+                            {application.proposed_budget === null
+                              ? "Not specified"
+                              : formatBudget(
+                                  application.proposed_budget,
+                                  application.proposed_budget,
+                                  employerJobs.find((job) => job.id === application.job_id)?.currency ?? "KES",
+                                )}
+                          </span>
+                          {application.status !== "withdrawn" && (
+                            <ReviewApplicationForm
+                              applicationId={application.id}
+                              status={application.status}
+                            />
                           )}
                         </div>
-                      </div>
-                      <p className="dashboard-description">{job.description}</p>
-                      <div className="dashboard-listing-meta">
-                        <span>{formatBudget(job.budget_min, job.budget_max, job.currency)}</span>
-                        <span>{job.word_count ? `${job.word_count.toLocaleString()} words` : "Word count flexible"}</span>
-                        <span>Deadline: {formatDate(job.deadline)}</span>
-                        <span>{employerApplications.filter((application) => application.job_id === job.id).length} applicants</span>
-                      </div>
-                      {job.status === "pending" && (
-                        <p className="dashboard-moderation-note">Waiting for administrator approval before writers can see this listing.</p>
-                      )}
-                    </article>
-                  ))}
-                </div>
-              ) : (
-                <div className="dashboard-empty">
-                  <h3>Your next great hire starts with a clear brief</h3>
-                  <p>Post a writing job above. You can track its approval status and review applications here.</p>
-                </div>
-              )}
-            </section>
-
-            <section className="dashboard-panel">
-              <div className="dashboard-panel-heading">
-                <div>
-                  <p className="dashboard-eyebrow">REVIEW CANDIDATES</p>
-                  <h2>Applications received</h2>
-                </div>
-                <span className="dashboard-count">{employerApplications.length} total</span>
-              </div>
-              {hasApplicantProfileAccessGap && (
-                <p className="auth-notice dashboard-setup-notice" role="status">
-                  Apply the <code>20261029000002_employer_applicant_profiles.sql</code> migration
-                  in Supabase to display applicant names.
-                </p>
-              )}
-              {employerApplications.length ? (
-                <div className="dashboard-application-list">
-                  {employerApplications.map((application) => (
-                    <article className="dashboard-applicant" key={application.id}>
-                      <div className="dashboard-applicant-heading">
-                        <div>
-                          <h3>{applicantNames.get(application.writer_id) ?? "Writer applicant"}</h3>
-                          <p>
-                            Applied to <strong>{employerJobTitles.get(application.job_id) ?? "your job"}</strong>
-                            {" · "}{formatDate(application.created_at)}
-                          </p>
-                        </div>
-                        <StatusBadge status={application.status} />
-                      </div>
-                      <p className="dashboard-cover-letter">{application.cover_letter}</p>
-                      <div className="dashboard-applicant-footer">
-                        <span>
-                          Proposed budget:{" "}
-                          {application.proposed_budget === null
-                            ? "Not specified"
-                            : formatBudget(
-                                application.proposed_budget,
-                                application.proposed_budget,
-                                employerJobs.find((job) => job.id === application.job_id)?.currency ?? "KES",
-                              )}
-                        </span>
-                        {application.status !== "withdrawn" && (
-                          <ReviewApplicationForm
-                            applicationId={application.id}
-                            status={application.status}
-                          />
-                        )}
-                      </div>
-                    </article>
-                  ))}
-                </div>
-              ) : (
-                <div className="dashboard-empty compact">
-                  <p>Applications will appear here when writers apply to your approved listings.</p>
-                </div>
-              )}
-            </section>
-          </div>
-        )}
-      </section>
-    </main>
+                      </article>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="dashboard-empty compact">
+                    <p>Applications will appear here when writers apply to your approved listings.</p>
+                  </div>
+                )}
+              </section>
+            </div>
+          )}
+        </section>
+      </main>
+    </div>
   );
 }
