@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { cookies } from "next/headers";
 import { createClient } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/service";
 import { DarajaRequestError, requestDarajaStkPush } from "@/lib/daraja";
@@ -20,6 +21,7 @@ const subscriptionPlans = {
 } as const;
 
 type SubscriptionPlanKey = keyof typeof subscriptionPlans;
+const reauthCookieName = "aw-subscription-reauth";
 
 function hasRecentAuthentication(authTime: unknown) {
   const timestamp = typeof authTime === "number" ? authTime : Number(authTime);
@@ -42,7 +44,7 @@ async function getWriterAccount() {
   if (error || !profile || profile.role !== "writer") {
     return { error: "Only writer accounts can subscribe to a writer plan." } as const;
   }
-  return { supabase, userId, profile, authTime: claims?.claims?.auth_time } as const;
+  return { supabase, userId, profile } as const;
 }
 
 export async function verifyWriterSubscriptionPassword(
@@ -64,7 +66,9 @@ export async function verifyWriterSubscriptionPassword(
     if (error || data.user?.id !== account.userId) {
       return { error: "The password could not be verified. Check it and try again." };
     }
-    const { data: refreshedClaims, error: claimsError } = await account.supabase.auth.getClaims();
+    const accessToken = data.session?.access_token;
+    if (!accessToken) return { error: "Password confirmed, but a secure session could not be created. Sign in again and retry." };
+    const { data: refreshedClaims, error: claimsError } = await account.supabase.auth.getClaims(accessToken);
     if (
       claimsError ||
       refreshedClaims?.claims?.sub !== account.userId ||
@@ -72,6 +76,14 @@ export async function verifyWriterSubscriptionPassword(
     ) {
       return { error: "Password confirmed, but your session could not be refreshed. Sign in again and retry." };
     }
+    const cookieStore = await cookies();
+    cookieStore.set(reauthCookieName, accessToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "strict",
+      path: "/dashboard",
+      maxAge: 5 * 60,
+    });
     return { passwordVerified: true };
   } catch {
     return { error: "Could not confirm your password right now. Please try again." };
@@ -84,9 +96,17 @@ export async function initiateSubscriptionPayment(
 ): Promise<SubscriptionActionState> {
   const account = await getWriterAccount();
   if ("error" in account) return { error: account.error };
-  if (!hasRecentAuthentication(account.authTime)) {
+  const cookieStore = await cookies();
+  const reauthToken = cookieStore.get(reauthCookieName)?.value;
+  if (!reauthToken) {
     return { error: "Confirm your account password again before starting payment." };
   }
+  const { data: reauthClaims, error: reauthError } = await account.supabase.auth.getClaims(reauthToken);
+  if (
+    reauthError ||
+    reauthClaims?.claims?.sub !== account.userId ||
+    !hasRecentAuthentication(reauthClaims?.claims?.auth_time)
+  ) return { error: "Confirm your account password again before starting payment." };
 
   const planKey = formData.get("plan_key");
   if (typeof planKey !== "string" || !Object.hasOwn(subscriptionPlans, planKey)) {
@@ -122,6 +142,8 @@ export async function initiateSubscriptionPayment(
   if (current?.status === "active") return { error: "You already have an active subscription." };
   if (current?.status === "pending_payment") return { error: "A subscription payment is already awaiting confirmation. Check your phone before retrying." };
   if (current?.status === "payment_review") return { error: "Your last payment needs support review before another subscription can be started." };
+
+  cookieStore.delete(reauthCookieName);
 
   const { data: subscription, error: subscriptionError } = await service.from("subscriptions")
     .insert({
