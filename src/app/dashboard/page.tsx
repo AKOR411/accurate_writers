@@ -206,7 +206,6 @@ export default async function DashboardPage() {
     (application) => !applicantNames.has(application.writer_id),
   );
   const employerJobTitles = new Map(employerJobs.map((job) => [job.id, job.title]));
-  const distinctWriters = new Set(employerApplications.map((application) => application.writer_id));
   const writerMetrics = [
     { label: "Applied Jobs", value: writerApplications.length, detail: "Applications submitted" },
     {
@@ -221,15 +220,30 @@ export default async function DashboardPage() {
     },
     { label: "Total Earnings", value: "—", detail: "Payments not connected" },
   ];
-  const employerMetrics = [
-    {
-      label: "Active Jobs",
-      value: employerJobs.filter((job) => job.status === "approved").length,
-      detail: "Approved listings",
-    },
-    { label: "Total Applications", value: employerApplications.length, detail: "Across your jobs" },
-    { label: "Writers", value: distinctWriters.size, detail: "Unique applicants" },
-    { label: "Pending Payments", value: "—", detail: "Payments not connected" },
+  const approvedJobs = employerJobs.filter((job) => job.status === "approved");
+  const acceptedJobIds = new Set(
+    employerApplications
+      .filter((application) => application.status === "accepted")
+      .map((application) => application.job_id),
+  );
+  const employerOverviewMetrics = [
+    { label: "Completed Orders", value: "Not tracked", detail: "Completion tracking is not connected", href: "/dashboard/employer/completed", tone: "green" },
+    { label: "Public Orders", value: approvedJobs.length, detail: "Approved listings", href: "/dashboard/employer/public", tone: "purple" },
+    { label: "Escrowed Orders", value: "Not tracked", detail: "Escrow is not connected", href: "/dashboard/employer/escrowed", tone: "green" },
+    { label: "Orders in Progress", value: acceptedJobIds.size, detail: "Orders with an accepted writer", href: "/dashboard/employer/in-progress", tone: "blue" },
+    { label: "Unconfirmed Orders", value: "Not tracked", detail: "Confirmation tracking is not connected", href: "/dashboard/employer/unconfirmed", tone: "orange" },
+    { label: "Submitted Orders", value: "Not tracked", detail: "Delivery tracking is not connected", href: "/dashboard/employer/submitted", tone: "purple" },
+    { label: "Orders in Revision", value: "Not tracked", detail: "Revision tracking is not connected", href: "/dashboard/employer/in-revision", tone: "orange" },
+    { label: "Paid Orders", value: "Not tracked", detail: "Payment records are not connected", href: "/dashboard/employer/paid", tone: "green" },
+    { label: "Unpaid Orders", value: "Not tracked", detail: "Payment records are not connected", href: "/dashboard/employer/unpaid", tone: "red" },
+    { label: "Disputed Orders", value: "Not tracked", detail: "Dispute tracking is not connected", href: "/dashboard/employer/disputed", tone: "red" },
+    { label: "Available for Take", value: approvedJobs.length, detail: "Public opportunities", href: "/dashboard/employer/public", tone: "purple" },
+    { label: "Request / Bid", value: employerApplications.filter((application) => application.status === "pending").length, detail: "Applications to review", href: "/dashboard/employer/request-bid", tone: "purple" },
+    { label: "Draft Orders", value: "Not tracked", detail: "Draft saving is not connected", href: "/dashboard/employer/draft-orders", tone: "orange" },
+    { label: "Canceled Orders", value: employerJobs.filter((job) => job.status === "closed").length, detail: "Closed listings", href: "/dashboard/employer/canceled", tone: "red" },
+    { label: "Test Orders", value: "Not tracked", detail: "Test orders are not supported", href: "/dashboard/employer/test", tone: "orange" },
+    { label: "All Orders", value: employerJobs.length, detail: "Orders in your account", href: "/dashboard/employer/all-orders", tone: "blue" },
+    { label: "Overall Rating", value: "Not tracked", detail: "Ratings are not connected", href: "/dashboard/employer/manage-reviews", tone: "orange" },
   ];
 
   return (
@@ -267,15 +281,29 @@ export default async function DashboardPage() {
             <span className="dashboard-role-pill">{roleLabels[profile.role]}</span>
           </div>
 
-          <div className="dashboard-metrics">
-            {(profile.role === "writer" ? writerMetrics : employerMetrics).map((metric) => (
-              <article key={metric.label}>
-                <span>{metric.label}</span>
-                <strong>{metric.value}</strong>
-                <small>{metric.detail}</small>
-              </article>
-            ))}
-          </div>
+          {profile.role === "writer" ? (
+            <div className="dashboard-metrics">
+              {writerMetrics.map((metric) => (
+                <article key={metric.label}>
+                  <span>{metric.label}</span>
+                  <strong>{metric.value}</strong>
+                  <small>{metric.detail}</small>
+                </article>
+              ))}
+            </div>
+          ) : (
+            <div className="dashboard-metrics employer-dashboard-metrics">
+              {employerOverviewMetrics.map((metric) => (
+                <Link className={`employer-metric-card tone-${metric.tone}`} href={metric.href} key={metric.label}>
+                  <span className="employer-metric-icon" aria-hidden="true">{metric.label.slice(0, 1)}</span>
+                  <span className="employer-metric-label">{metric.label}</span>
+                  <strong>{metric.value}</strong>
+                  <small>{metric.detail}</small>
+                  <span className="employer-metric-accent" aria-hidden="true" />
+                </Link>
+              ))}
+            </div>
+          )}
 
           {profile.role === "writer" ? (
             <div className="dashboard-overview-grid">
