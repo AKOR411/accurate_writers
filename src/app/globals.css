@@ -4921,3 +4921,146 @@ select {
     grid-template-columns: minmax(0, 1fr);
   }
 }
+
+
+/* Writer subscription pricing */
+.subscription-plans-panel {
+  overflow: hidden;
+}
+
+.subscription-plan-notice {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 13px 16px;
+  border: 1px solid #f0d58e;
+  border-radius: 8px;
+  background: #fff6dd;
+  color: #72551a;
+  font-size: 11px;
+  line-height: 1.6;
+}
+
+.subscription-plan-notice p {
+  margin: 0;
+}
+
+.subscription-plan-notice-icon {
+  display: grid;
+  width: 24px;
+  height: 24px;
+  flex: 0 0 24px;
+  place-items: center;
+  border-radius: 50%;
+  background: #edb53e;
+  color: #fff;
+  font-weight: 800;
+}
+
+.subscription-plan-content {
+  padding: 24px 0 6px;
+}
+
+.subscription-plan-heading {
+  margin-bottom: 18px;
+  text-align: center;
+}
+
+.subscription-plan-heading .dashboard-eyebrow {
+  margin: 0 0 5px;
+}
+
+.subscription-plan-heading h2 {
+  margin: 0;
+  color: #243a54;
+  font-size: 20px;
+  letter-spacing: -0.025em;
+}
+
+.subscription-plan-heading > p:last-child {
+  margin: 7px 0 0;
+  color: #748399;
+  font-size: 11px;
+}
+
+.subscription-plan-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.subscription-plan-card {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  align-items: center;
+  padding: 23px 18px 18px;
+  border: 1px solid #e4eaf2;
+  border-radius: 9px;
+  background: #fff;
+  box-shadow: 0 5px 16px rgba(20, 45, 80, 0.045);
+  text-align: center;
+}
+
+.subscription-plan-card h3 {
+  margin: 0;
+  color: #293e58;
+  font-size: 16px;
+}
+
+.subscription-plan-price {
+  margin: 12px 0 15px;
+  color: #66758a;
+  font-size: 12px;
+}
+
+.subscription-plan-price strong {
+  color: #263b55;
+  font-size: 23px;
+  font-weight: 650;
+  letter-spacing: -0.04em;
+}
+
+.subscription-plan-card ul {
+  display: grid;
+  gap: 8px;
+  margin: 0 0 21px;
+  padding: 0;
+  color: #718096;
+  font-size: 10px;
+  list-style: none;
+}
+
+.subscription-plan-button {
+  width: 100%;
+  min-height: 38px;
+  margin-top: auto;
+  border: 0;
+  border-radius: 5px;
+  color: #fff;
+  font: inherit;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.subscription-plan-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.72;
+}
+
+.subscription-plan-gold .subscription-plan-button { background: #e8ad33; }
+.subscription-plan-blue .subscription-plan-button { background: #299dc4; }
+.subscription-plan-green .subscription-plan-button { background: #20ae8d; }
+
+.subscription-plan-checkout-note {
+  margin: 14px 0 0;
+  color: #8290a2;
+  font-size: 10px;
+  text-align: center;
+}
+
+@media (max-width: 760px) {
+  .subscription-plan-grid {
+    grid-template-columns: 1fr;
+  }
+}

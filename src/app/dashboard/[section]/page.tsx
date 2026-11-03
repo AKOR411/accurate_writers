@@ -366,7 +366,43 @@ export default async function WriterSectionPage({ params }: PageProps<"/dashboar
             </section>
           )}
 
-          {!isApplicationPage && !(key === "jobs" || key === "available" || key === "new" || key === "offers" || key === "assignments" || key === "in-progress" || key === "in-review" || key === "revision" || key === "completed" || key === "canceled" || key === "payments" || key === "pending-payment" || key === "paid" || key === "disputed" || key === "rating" || key === "chat") && (
+          {key === "subscribe" && (
+            <section className="dashboard-panel dashboard-section-panel subscription-plans-panel">
+              <div className="subscription-plan-notice" role="note">
+                <span className="subscription-plan-notice-icon" aria-hidden="true">i</span>
+                <p><strong>You do not have an active subscription.</strong> Escrowed orders may carry a 15% platform fee. Choose a plan below to review your options.</p>
+              </div>
+              <div className="subscription-plan-content">
+                <div className="subscription-plan-heading">
+                  <p className="dashboard-eyebrow">MEMBERSHIP</p>
+                  <h2>Pricing plans</h2>
+                  <p>Choose the access period that works best for you.</p>
+                </div>
+                <div className="subscription-plan-grid">
+                  {[
+                    { name: "Weekly Plan", price: 150, period: "week", tone: "gold" },
+                    { name: "2 Weeks Plan", price: 275, period: "2 weeks", tone: "blue" },
+                    { name: "Monthly Plan", price: 500, period: "month", tone: "green" },
+                  ].map((plan) => (
+                    <article className={`subscription-plan-card subscription-plan-${plan.tone}`} key={plan.name}>
+                      <h3>{plan.name}</h3>
+                      <p className="subscription-plan-price"><strong>KES {plan.price.toLocaleString()}</strong><span> / {plan.period}</span></p>
+                      <ul>
+                        <li>Access to orders</li>
+                        <li>24/7 support</li>
+                        <li>SMS notifications</li>
+                        <li>Email notifications</li>
+                      </ul>
+                      <button className="subscription-plan-button" disabled type="button">Subscribe</button>
+                    </article>
+                  ))}
+                </div>
+                <p className="subscription-plan-checkout-note">Subscription checkout is not connected yet, so these plans will not charge you.</p>
+              </div>
+            </section>
+          )}
+
+          {!isApplicationPage && !(key === "jobs" || key === "available" || key === "new" || key === "offers" || key === "assignments" || key === "in-progress" || key === "in-review" || key === "revision" || key === "completed" || key === "canceled" || key === "payments" || key === "pending-payment" || key === "paid" || key === "disputed" || key === "rating" || key === "chat" || key === "subscribe") && (
             <section className="dashboard-panel dashboard-section-panel">
               <div className="dashboard-empty">
                 <span className="dashboard-empty-mark" aria-hidden="true">i</span>
