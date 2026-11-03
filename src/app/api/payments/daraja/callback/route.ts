@@ -57,7 +57,7 @@ export async function POST(request: Request) {
 
   try {
     const supabase = createServiceClient();
-    const { error } = await supabase.rpc("process_daraja_payment_callback", {
+    const callbackArgs = {
       target_checkout_id: stk.CheckoutRequestID,
       target_merchant_id: stk.MerchantRequestID,
       callback_result_code: resultCode,
@@ -65,8 +65,14 @@ export async function POST(request: Request) {
       callback_amount: amount,
       callback_phone: phone,
       callback_receipt: typeof receipt === "string" ? receipt : null,
-    });
+    };
+    const { data: assignmentResult, error } = await supabase.rpc("process_daraja_payment_callback", callbackArgs);
     if (error) return Response.json({ ResultCode: 1, ResultDesc: "Could not record callback" }, { status: 500 });
+
+    if (assignmentResult === "not_found") {
+      const { error: subscriptionError } = await supabase.rpc("process_daraja_subscription_callback", callbackArgs);
+      if (subscriptionError) return Response.json({ ResultCode: 1, ResultDesc: "Could not record subscription callback" }, { status: 500 });
+    }
   } catch {
     return Response.json({ ResultCode: 1, ResultDesc: "Payment callback processing is unavailable" }, { status: 500 });
   }

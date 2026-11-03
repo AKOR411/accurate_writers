@@ -4,6 +4,7 @@ import { ApplyToJobForm, AssignmentDisputeForm, AssignmentReviewForm, DashboardM
 import DashboardSidebar from "@/app/dashboard/dashboard-sidebar";
 import DashboardNotificationBell from "@/app/dashboard/dashboard-notification-bell";
 import AssignmentSubmissionForm from "@/app/dashboard/assignment-submission-form";
+import SubscriptionPlans from "@/app/dashboard/subscription-plans";
 import { getSupabaseConfig } from "@/lib/supabase/config";
 import { createReadOnlyClient } from "@/lib/supabase/server";
 import type { ApplicationStatus, JobStatus } from "@/lib/supabase/database.types";
@@ -86,13 +87,14 @@ export default async function WriterSectionPage({ params }: PageProps<"/dashboar
     .limit(10);
   if (notificationsError) throw new Error(`Could not load notifications: ${notificationsError.message}`);
 
-  const [jobsResult, applicationsResult, offersResult, assignmentsResult, paymentsResult, messagesResult] = await Promise.all([
+  const [jobsResult, applicationsResult, offersResult, assignmentsResult, paymentsResult, messagesResult, subscriptionsResult] = await Promise.all([
     supabase.from("jobs").select("id, employer_id, title, description, category, budget_min, budget_max, currency, word_count, deadline, created_at").eq("status", "approved").eq("is_draft", false).is("filled_at", null).order("created_at", { ascending: false }).limit(50),
     supabase.from("applications").select("id, job_id, status, proposed_budget, experience_summary, created_at").eq("writer_id", userId).order("created_at", { ascending: false }).limit(100),
     supabase.from("job_offers").select("id, job_id, application_id, amount, currency, instructions, status, expires_at, created_at").eq("writer_id", userId).order("created_at", { ascending: false }).limit(50),
     supabase.from("assignments").select("id, job_id, offer_id, employer_id, agreed_amount, currency, instructions, deadline, status, accepted_at, completed_at").eq("writer_id", userId).order("created_at", { ascending: false }).limit(100),
     supabase.from("payments").select("id, assignment_id, amount, currency, status, collection_status, collection_confirmed_at, provider_reference, confirmed_at, created_at").eq("writer_id", userId).order("created_at", { ascending: false }).limit(100),
     supabase.from("messages").select("id, assignment_id, job_id, sender_id, recipient_id, body, read_at, created_at").or(`sender_id.eq.${userId},recipient_id.eq.${userId}`).order("created_at", { ascending: false }).limit(100),
+    supabase.from("subscriptions").select("id, plan_key, amount, currency, duration_days, status, starts_at, expires_at, created_at").eq("writer_id", userId).order("created_at", { ascending: false }).limit(20),
   ]);
   if (jobsResult.error) throw new Error(`Could not load approved jobs: ${jobsResult.error.message}`);
   if (applicationsResult.error) throw new Error(`Could not load your applications: ${applicationsResult.error.message}`);
@@ -100,12 +102,20 @@ export default async function WriterSectionPage({ params }: PageProps<"/dashboar
   if (assignmentsResult.error) throw new Error(`Could not load your assignments: ${assignmentsResult.error.message}`);
   if (paymentsResult.error) throw new Error(`Could not load your payments: ${paymentsResult.error.message}`);
   if (messagesResult.error) throw new Error(`Could not load your messages: ${messagesResult.error.message}`);
+  if (subscriptionsResult.error) throw new Error("Could not load your subscriptions.");
+
   const jobs = jobsResult.data ?? [];
   const applications = applicationsResult.data ?? [];
   const offers = offersResult.data ?? [];
   const assignments = assignmentsResult.data ?? [];
   const payments = paymentsResult.data ?? [];
   const messages = messagesResult.data ?? [];
+  const subscriptions = subscriptionsResult.data ?? [];
+  const subscriptionStatus = (subscriptions.find((subscription) =>
+    subscription.status === "pending_payment" ||
+    subscription.status === "payment_review" ||
+    (subscription.status === "active" && subscription.expires_at && new Date(subscription.expires_at) > new Date())
+  )?.status ?? "available") as "available" | "active" | "pending_payment" | "payment_review";
   const visibleApplications = key === "discarded"
     ? applications.filter((application) => ["rejected", "withdrawn"].includes(application.status))
     : key === "in-review" || key === "my-bids"
@@ -368,41 +378,34 @@ export default async function WriterSectionPage({ params }: PageProps<"/dashboar
 
           {key === "subscribe" && (
             <section className="dashboard-panel dashboard-section-panel subscription-plans-panel">
-              <div className="subscription-plan-notice" role="note">
-                <span className="subscription-plan-notice-icon" aria-hidden="true">i</span>
-                <p><strong>You do not have an active subscription.</strong> Escrowed orders may carry a 15% platform fee. Choose a plan below to review your options.</p>
+              <SubscriptionPlans subscriptionStatus={subscriptionStatus} />
+            </section>
+          )}
+          {key === "active-subscriptions" && (
+            <section className="dashboard-panel dashboard-section-panel">
+              <div className="dashboard-panel-heading">
+                <div><p className="dashboard-eyebrow">YOUR MEMBERSHIP</p><h2>Active subscriptions</h2></div>
+                <span className="dashboard-count">{subscriptions.filter((subscription) => subscription.status === "active" && subscription.expires_at && new Date(subscription.expires_at) > new Date()).length} active</span>
               </div>
-              <div className="subscription-plan-content">
-                <div className="subscription-plan-heading">
-                  <p className="dashboard-eyebrow">MEMBERSHIP</p>
-                  <h2>Pricing plans</h2>
-                  <p>Choose the access period that works best for you.</p>
-                </div>
-                <div className="subscription-plan-grid">
-                  {[
-                    { name: "Weekly Plan", price: 150, period: "week", tone: "gold" },
-                    { name: "2 Weeks Plan", price: 275, period: "2 weeks", tone: "blue" },
-                    { name: "Monthly Plan", price: 500, period: "month", tone: "green" },
-                  ].map((plan) => (
-                    <article className={`subscription-plan-card subscription-plan-${plan.tone}`} key={plan.name}>
-                      <h3>{plan.name}</h3>
-                      <p className="subscription-plan-price"><strong>KES {plan.price.toLocaleString()}</strong><span> / {plan.period}</span></p>
-                      <ul>
-                        <li>Access to orders</li>
-                        <li>24/7 support</li>
-                        <li>SMS notifications</li>
-                        <li>Email notifications</li>
-                      </ul>
-                      <button className="subscription-plan-button" disabled type="button">Subscribe</button>
+              {subscriptions.length ? (
+                <div className="dashboard-application-list">
+                  {subscriptions.map((subscription) => (
+                    <article className="dashboard-application" key={subscription.id}>
+                      <div>
+                        <h3>{subscription.plan_key === "two_weeks" ? "2 Weeks Plan" : subscription.plan_key === "monthly" ? "Monthly Plan" : "Weekly Plan"}</h3>
+                        <p>{formatBudget(subscription.amount, subscription.amount, subscription.currency)} · {subscription.duration_days} days</p>
+                        <p>Status: {subscription.status.replaceAll("_", " ")}</p>
+                        {subscription.expires_at && <p>Expires {formatDate(subscription.expires_at)}</p>}
+                      </div>
                     </article>
                   ))}
                 </div>
-                <p className="subscription-plan-checkout-note">Subscription checkout is not connected yet, so these plans will not charge you.</p>
-              </div>
+              ) : (
+                <div className="dashboard-empty"><h3>No subscriptions yet</h3><p>Choose a plan to unlock subscription access.</p><Link className="button" href="/dashboard/subscribe">View plans</Link></div>
+              )}
             </section>
           )}
-
-          {!isApplicationPage && !(key === "jobs" || key === "available" || key === "new" || key === "offers" || key === "assignments" || key === "in-progress" || key === "in-review" || key === "revision" || key === "completed" || key === "canceled" || key === "payments" || key === "pending-payment" || key === "paid" || key === "disputed" || key === "rating" || key === "chat" || key === "subscribe") && (
+          {!isApplicationPage && !(key === "jobs" || key === "available" || key === "new" || key === "offers" || key === "assignments" || key === "in-progress" || key === "in-review" || key === "revision" || key === "completed" || key === "canceled" || key === "payments" || key === "pending-payment" || key === "paid" || key === "disputed" || key === "rating" || key === "chat" || key === "subscribe" || key === "active-subscriptions") && (
             <section className="dashboard-panel dashboard-section-panel">
               <div className="dashboard-empty">
                 <span className="dashboard-empty-mark" aria-hidden="true">i</span>

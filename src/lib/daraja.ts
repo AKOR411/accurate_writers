@@ -89,7 +89,7 @@ async function getAccessToken(settings: DarajaSettings) {
   return cachedToken.value;
 }
 
-export async function requestDarajaStkPush(input: { phone: string; amount: number; paymentId: string }) {
+export async function requestDarajaStkPush(input: { phone: string; amount: number; reference: string; description?: string }) {
   const settings = getSettings();
   const timestamp = darajaTimestamp();
   const password = Buffer.from(`${settings.shortCode}${settings.passkey}${timestamp}`).toString("base64");
@@ -113,8 +113,8 @@ export async function requestDarajaStkPush(input: { phone: string; amount: numbe
         PartyB: settings.shortCode,
         PhoneNumber: input.phone,
         CallBackURL: callback.toString(),
-        AccountReference: `AW${input.paymentId.replaceAll("-", "").slice(0, 8)}`,
-        TransactionDesc: "AW payment",
+        AccountReference: `AW${input.reference.replaceAll("-", "").slice(0, 8)}`,
+        TransactionDesc: input.description ?? "AW payment",
       }),
     });
   } catch {

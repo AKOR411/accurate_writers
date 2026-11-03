@@ -5064,3 +5064,154 @@ select {
     grid-template-columns: 1fr;
   }
 }
+
+.subscription-dialog-backdrop {
+  position: fixed;
+  z-index: 1000;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 18px;
+  background: rgba(14, 27, 42, 0.58);
+}
+
+.subscription-dialog {
+  width: min(100%, 420px);
+  overflow: hidden;
+  border: 1px solid #dbe3ec;
+  border-radius: 8px;
+  background: #fff;
+  box-shadow: 0 20px 60px rgba(7, 21, 38, 0.25);
+}
+
+.subscription-dialog-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 44px;
+  padding: 10px 14px;
+  background: #2da8cf;
+  color: #fff;
+}
+
+.subscription-dialog-header h2 {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 650;
+}
+
+.subscription-dialog-close {
+  display: grid;
+  width: 24px;
+  height: 24px;
+  place-items: center;
+  border: 0;
+  background: transparent;
+  color: #fff;
+  cursor: pointer;
+  font-size: 19px;
+}
+
+.subscription-dialog-body {
+  display: grid;
+  gap: 14px;
+  padding: 17px 15px 14px;
+}
+
+.subscription-dialog-body > p {
+  margin: 0;
+  color: #52647a;
+  font-size: 11px;
+  line-height: 1.6;
+}
+
+.subscription-dialog-body label {
+  display: grid;
+  gap: 6px;
+  color: #35465b;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.subscription-dialog-body input {
+  width: 100%;
+  min-height: 37px;
+  padding: 8px 10px;
+  border: 1px solid #cfd8e3;
+  border-radius: 4px;
+  background: #fff;
+  color: #25384f;
+  font: inherit;
+  font-size: 12px;
+}
+
+.subscription-dialog-body input:focus {
+  border-color: #238fd0;
+  outline: 2px solid rgba(35, 143, 208, 0.17);
+}
+
+.subscription-dialog-body input[readonly] {
+  background: #f1f4f7;
+}
+
+.subscription-dialog-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin: 2px -15px -14px;
+  padding: 10px 15px;
+  border-top: 1px solid #e8edf2;
+}
+
+.subscription-dialog-primary,
+.subscription-dialog-actions .dashboard-secondary-button {
+  min-height: 34px;
+  padding: 0 13px;
+  border: 1px solid #32a5d6;
+  border-radius: 4px;
+  background: #fff;
+  color: #198bc1;
+  cursor: pointer;
+  font: inherit;
+  font-size: 11px;
+  font-weight: 650;
+}
+
+.subscription-dialog-primary {
+  background: #28a5d1;
+  color: #fff;
+}
+
+.subscription-dialog-primary:disabled {
+  cursor: wait;
+  opacity: 0.65;
+}
+
+.subscription-dialog-actions .dashboard-secondary-button {
+  border-color: #c8d2de;
+  color: #43556b;
+}
+
+.subscription-dialog-error,
+.subscription-dialog-success {
+  margin: 0;
+  padding: 10px;
+  border-radius: 5px;
+  font-size: 11px;
+  line-height: 1.5;
+}
+
+.subscription-dialog-error {
+  background: #fff0ef;
+  color: #a8322a;
+}
+
+.subscription-dialog-success {
+  background: #eaf8f2;
+  color: #246b51;
+}
+
+.subscription-dialog-success p {
+  margin: 5px 0 0;
+}

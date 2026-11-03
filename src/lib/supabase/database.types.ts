@@ -214,6 +214,26 @@ export type Database = {
         receipt_number?: string | null; result_code?: string | null; result_description?: string | null;
         callback_received_at?: string | null; created_at?: string; updated_at?: string;
       }>;
+      subscriptions: GeneratedTable<{
+        id: string; writer_id: string; plan_key: string; amount: number; currency: string;
+        duration_days: number; status: string; starts_at: string | null; expires_at: string | null;
+        created_at: string; updated_at: string;
+      }, {
+        id?: string; writer_id: string; plan_key: string; amount: number; currency?: string;
+        duration_days: number; status?: string; starts_at?: string | null; expires_at?: string | null;
+        created_at?: string; updated_at?: string;
+      }>;
+      subscription_payment_attempts: GeneratedTable<{
+        id: string; subscription_id: string; writer_id: string; provider: string;
+        merchant_request_id: string | null; checkout_request_id: string | null; phone_number: string;
+        amount: number; status: string; receipt_number: string | null; result_code: string | null;
+        result_description: string | null; callback_received_at: string | null; created_at: string; updated_at: string;
+      }, {
+        id?: string; subscription_id: string; writer_id: string; provider?: string;
+        merchant_request_id?: string | null; checkout_request_id?: string | null; phone_number: string;
+        amount: number; status?: string; receipt_number?: string | null; result_code?: string | null;
+        result_description?: string | null; callback_received_at?: string | null; created_at?: string; updated_at?: string;
+      }>;
       reviews: GeneratedTable<{
         id: string; assignment_id: string; reviewer_id: string; reviewee_id: string; rating: number;
         comment: string; created_at: string;
@@ -235,6 +255,14 @@ export type Database = {
       review_assignment_submission: { Args: { target_assignment: string; decision: string; notes?: string }; Returns: undefined };
       cancel_assignment: { Args: { target_assignment: string; cancellation_reason?: string }; Returns: undefined };
       process_daraja_payment_callback: {
+        Args: {
+          target_checkout_id: string; target_merchant_id: string; callback_result_code: string;
+          callback_result_description: string; callback_amount: number | null; callback_phone: string | null;
+          callback_receipt: string | null;
+        };
+        Returns: string;
+      };
+      process_daraja_subscription_callback: {
         Args: {
           target_checkout_id: string; target_merchant_id: string; callback_result_code: string;
           callback_result_description: string; callback_amount: number | null; callback_phone: string | null;

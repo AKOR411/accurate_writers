@@ -601,7 +601,7 @@ export async function initiateDarajaPayment(_previousState: DashboardActionState
   }
 
   try {
-    const stk = await requestDarajaStkPush({ phone, amount: payment.amount, paymentId });
+    const stk = await requestDarajaStkPush({ phone, amount: payment.amount, reference: paymentId });
     const { error: attemptUpdateError } = await service.from("payment_attempts").update({
       merchant_request_id: stk.merchantRequestId,
       checkout_request_id: stk.checkoutRequestId,
