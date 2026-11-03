@@ -17,15 +17,62 @@ type NavItem = {
 
 const navigation: Record<AccountRole, NavItem[]> = {
   employer: [
-    { href: "/dashboard", label: "Dashboard", icon: "\u25A6" },
-    { href: "#post-job", label: "Post a Job", icon: "\uFF0B" },
-    { href: "#my-jobs", label: "My Jobs", icon: "\u25A4" },
-    { href: "#applications", label: "Applications", icon: "\u25A3" },
-    { href: "#writers", label: "Writers", icon: "\u2659" },
-    { href: "#messages", label: "Messages", icon: "\u25B1", soon: true },
-    { href: "#payments", label: "Payments", icon: "\uFF04", soon: true },
-    { href: "#profile", label: "Profile", icon: "\u25C9", soon: true },
-    { href: "#settings", label: "Settings", icon: "\u2699", soon: true },
+    { href: "/dashboard", label: "Dashboard", icon: "\u2302" },
+    {
+      href: "/dashboard/employer/orders", label: "Orders", icon: "\u25c7",
+      children: [
+        { href: "/dashboard/employer/post-order", label: "Post an Order", icon: "\u2013" },
+        { href: "/dashboard/employer/all-orders", label: "All", icon: "\u2013" },
+        { href: "/dashboard/employer/draft-orders", label: "Draft Orders", icon: "\u2013" },
+        { href: "/dashboard/employer/request-bid", label: "Request / Bid", icon: "\u2013" },
+        { href: "/dashboard/employer/tasks", label: "Tasks", icon: "\u2013" },
+        { href: "/dashboard/employer/public", label: "Public", icon: "\u2013" },
+        { href: "/dashboard/employer/escrowed", label: "Escrowed", icon: "\u2013" },
+        { href: "/dashboard/employer/in-progress", label: "In Progress", icon: "\u2013" },
+        { href: "/dashboard/employer/unconfirmed", label: "Unconfirmed", icon: "\u2013" },
+        { href: "/dashboard/employer/submitted", label: "Submitted", icon: "\u2013" },
+        { href: "/dashboard/employer/in-revision", label: "In Revision", icon: "\u2013" },
+        { href: "/dashboard/employer/completed", label: "Completed", icon: "\u2013" },
+        { href: "/dashboard/employer/disputed", label: "Disputed", icon: "\u2013" },
+        { href: "/dashboard/employer/unpaid", label: "Unpaid / Incomplete", icon: "\u2013" },
+        { href: "/dashboard/employer/paid", label: "Paid", icon: "\u2013" },
+        { href: "/dashboard/employer/canceled", label: "Canceled", icon: "\u2013" },
+        { href: "/dashboard/employer/test", label: "Test", icon: "\u2013" },
+        { href: "/dashboard/employer/request", label: "Request", icon: "\u2013" },
+        { href: "/dashboard/employer/overdue-public", label: "Overdue Public", icon: "\u2013" },
+        { href: "/dashboard/employer/overdue-private", label: "Overdue Private", icon: "\u2013" },
+        { href: "/dashboard/employer/partially-paid", label: "Partially Paid", icon: "\u2013" },
+        { href: "/dashboard/employer/old-orders", label: "Old Orders", icon: "\u2013" },
+      ],
+    },
+    {
+      href: "/dashboard/employer/my-writers", label: "My Writers", icon: "\u2659",
+      children: [
+        { href: "/dashboard/employer/my-writers", label: "All Writers", icon: "\u2013" },
+        { href: "/dashboard/employer/public-writers", label: "Public Writers", icon: "\u2013" },
+        { href: "/dashboard/employer/top-writers", label: "Top Writers", icon: "\u2013" },
+      ],
+    },
+    { href: "/dashboard/employer/manage-reviews", label: "Manage Reviews", icon: "\u2606" },
+    { href: "/dashboard/employer/chat", label: "Chat", icon: "\u25ef" },
+    {
+      href: "/dashboard/employer/my-account", label: "My Account", icon: "\u2659",
+      children: [
+        { href: "/dashboard/employer/profile", label: "Profile", icon: "\u2013" },
+        { href: "/dashboard/employer/settings", label: "Settings", icon: "\u2013" },
+      ],
+    },
+    {
+      href: "/dashboard/employer/transaction-history", label: "Transaction History", icon: "\u0024",
+      children: [
+        { href: "/dashboard/employer/transaction-history", label: "History", icon: "\u2013" },
+        { href: "/dashboard/employer/subscriptions", label: "Subscriptions", icon: "\u2013" },
+      ],
+    },
+    { href: "/dashboard/employer/guidelines", label: "Guidelines / FAQs", icon: "?" },
+    { href: "/dashboard/employer/untrusted-writers", label: "Untrusted Writers", icon: "\u26a0" },
+    { href: "/dashboard/employer/news", label: "News", icon: "\u25a4" },
+    { href: "/dashboard/employer/rules", label: "Rules & Regulations", icon: "\u2139" },
   ],
   writer: [
     { href: "/dashboard", label: "Dashboard", icon: "\u2302" },
@@ -83,17 +130,9 @@ export default function DashboardSidebar({
 }) {
   const pathname = usePathname();
   const [activeHash, setActiveHash] = useState("#overview");
-  const [availableExpandedOverride, setAvailableExpandedOverride] = useState<boolean | null>(null);
-  const availableExpanded = availableExpandedOverride ?? (
-    pathname.startsWith("/dashboard/available") ||
-      ["/dashboard/new", "/dashboard/my-bids", "/dashboard/discarded", "/dashboard/invited", "/dashboard/private-available"].includes(pathname)
-  );
-  const [subscriptionsExpandedOverride, setSubscriptionsExpandedOverride] = useState<boolean | null>(null);
-  const subscriptionsExpanded = subscriptionsExpandedOverride ?? pathname.startsWith("/dashboard/subscr");
-  const [completedExpandedOverride, setCompletedExpandedOverride] = useState<boolean | null>(null);
-  const completedExpanded = completedExpandedOverride ?? (
-    pathname.startsWith("/dashboard/completed") ||
-      ["/dashboard/pending-payment", "/dashboard/paid"].includes(pathname)
+  const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({});
+  const isGroupExpanded = (item: NavItem) => expandedGroups[item.href] ?? (
+    pathname === item.href || item.children?.some((child) => child.href === pathname) === true
   );
 
   return (
@@ -112,20 +151,19 @@ export default function DashboardSidebar({
                   <span>{item.label}</span>
                 </Link>
                 <button
-                  aria-expanded={item.href === "/dashboard/available" ? availableExpanded : item.href === "/dashboard/subscriptions" ? subscriptionsExpanded : completedExpanded}
-                  aria-label={`${(item.href === "/dashboard/available" ? availableExpanded : item.href === "/dashboard/subscriptions" ? subscriptionsExpanded : completedExpanded) ? "Collapse" : "Expand"} ${item.label} pages`}
+                  aria-expanded={isGroupExpanded(item)}
+                  aria-label={`${isGroupExpanded(item) ? "Collapse" : "Expand"} ${item.label} pages`}
                   className="dashboard-nav-toggle"
-                  onClick={() => item.href === "/dashboard/available"
-                    ? setAvailableExpandedOverride((expanded) => !(expanded ?? availableExpanded))
-                    : item.href === "/dashboard/subscriptions"
-                      ? setSubscriptionsExpandedOverride((expanded) => !(expanded ?? subscriptionsExpanded))
-                      : setCompletedExpandedOverride((expanded) => !(expanded ?? completedExpanded))}
+                  onClick={() => setExpandedGroups((groups) => ({
+                    ...groups,
+                    [item.href]: !isGroupExpanded(item),
+                  }))}
                   type="button"
                 >
-                  <span aria-hidden="true">{(item.href === "/dashboard/available" ? availableExpanded : item.href === "/dashboard/subscriptions" ? subscriptionsExpanded : completedExpanded) ? "v" : ">"}</span>
+                  <span aria-hidden="true">{isGroupExpanded(item) ? "v" : ">"}</span>
                 </button>
               </div>
-              {(item.href === "/dashboard/available" ? availableExpanded : item.href === "/dashboard/subscriptions" ? subscriptionsExpanded : completedExpanded) && (
+              {isGroupExpanded(item) && (
                 <div className="dashboard-nav-subitems">
                   {item.children.map((child) => (
                     <Link
