@@ -7,6 +7,7 @@ import {
   WithdrawApplicationForm,
 } from "@/app/dashboard/dashboard-forms";
 import DashboardSidebar from "@/app/dashboard/dashboard-sidebar";
+import DashboardNotificationBell from "@/app/dashboard/dashboard-notification-bell";
 import { getSupabaseConfig } from "@/lib/supabase/config";
 import type {
   AccountRole,
@@ -121,12 +122,21 @@ export default async function DashboardPage() {
     );
   }
 
+  const { data: dashboardNotifications, error: notificationsError } = await supabase
+    .from("notifications")
+    .select("*")
+    .order("created_at", { ascending: false })
+    .limit(10);
+  if (notificationsError) throw new Error(`Could not load notifications: ${notificationsError.message}`);
+
   const writerData = profile.role === "writer"
     ? await Promise.all([
         supabase
           .from("jobs")
           .select("id, title, description, category, budget_min, budget_max, currency, word_count, deadline, created_at")
           .eq("status", "approved")
+          .eq("is_draft", false)
+          .is("filled_at", null)
           .order("created_at", { ascending: false })
           .limit(50),
         supabase
@@ -160,7 +170,7 @@ export default async function DashboardPage() {
   const employerJobsResult = profile.role === "employer"
     ? await supabase
         .from("jobs")
-        .select("id, title, description, category, budget_min, budget_max, currency, word_count, deadline, status, created_at")
+        .select("id, title, description, category, budget_min, budget_max, currency, word_count, deadline, status, is_draft, created_at")
         .eq("employer_id", userId)
         .order("created_at", { ascending: false })
         .limit(50)
@@ -239,6 +249,7 @@ export default async function DashboardPage() {
             <strong>{roleLabels[profile.role]} dashboard</strong>
           </div>
           <div className="dashboard-account">
+            <DashboardNotificationBell notifications={dashboardNotifications ?? []} />
             <span className="dashboard-account-avatar" aria-hidden="true">
               {profile.full_name.trim().slice(0, 1).toUpperCase()}
             </span>

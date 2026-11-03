@@ -3557,6 +3557,157 @@ select {
   gap: 10px;
 }
 
+.dashboard-notification-wrap {
+  position: relative;
+  margin-left: auto;
+}
+
+.dashboard-notification-button {
+  position: relative;
+  display: grid;
+  width: 35px;
+  height: 35px;
+  place-items: center;
+  border: 1px solid #e5ebf3;
+  border-radius: 9px;
+  background: #fff;
+  color: #526780;
+  cursor: pointer;
+  font-size: 15px;
+}
+
+.dashboard-notification-button:hover {
+  border-color: #cbd9eb;
+  background: #f8fbff;
+}
+
+.dashboard-notification-count {
+  position: absolute;
+  top: -5px;
+  right: -5px;
+  display: grid;
+  min-width: 16px;
+  height: 16px;
+  place-items: center;
+  padding: 0 4px;
+  border: 2px solid #fff;
+  border-radius: 20px;
+  background: #e34e5b;
+  color: #fff;
+  font-size: 8px;
+  font-weight: 750;
+}
+
+.dashboard-notification-popover {
+  position: absolute;
+  z-index: 30;
+  top: calc(100% + 10px);
+  right: -90px;
+  width: min(370px, calc(100vw - 30px));
+  overflow: hidden;
+  border: 1px solid #e0e8f2;
+  border-radius: 10px;
+  background: #fff;
+  box-shadow: 0 16px 45px rgba(15, 35, 60, 0.18);
+}
+
+.dashboard-notification-popover > header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 13px 15px;
+  border-bottom: 1px solid #edf1f6;
+}
+
+.dashboard-notification-popover > header > div {
+  display: grid;
+  gap: 3px;
+  color: #263a55;
+  font-size: 12px;
+}
+
+.dashboard-notification-popover > header span,
+.dashboard-notification-popover > header button {
+  color: #8290a2;
+  font-size: 9px;
+}
+
+.dashboard-notification-popover > header button {
+  border: 0;
+  background: transparent;
+  color: #1769e8;
+  cursor: pointer;
+}
+
+.dashboard-notification-popover > header button:disabled {
+  cursor: default;
+  opacity: 0.55;
+}
+
+.dashboard-notification-list {
+  max-height: min(420px, 70vh);
+  overflow-y: auto;
+}
+
+.dashboard-notification-item {
+  display: flex;
+  width: 100%;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 12px 14px;
+  border: 0;
+  border-bottom: 1px solid #f0f3f7;
+  background: #fff;
+  cursor: pointer;
+  text-align: left;
+}
+
+.dashboard-notification-item:hover,
+.dashboard-notification-item.unread {
+  background: #f7faff;
+}
+
+.dashboard-notification-dot {
+  width: 7px;
+  height: 7px;
+  flex: 0 0 7px;
+  margin-top: 4px;
+  border-radius: 50%;
+  background: transparent;
+}
+
+.dashboard-notification-item.unread .dashboard-notification-dot {
+  background: #2878e8;
+}
+
+.dashboard-notification-copy {
+  display: grid;
+  min-width: 0;
+  gap: 4px;
+  color: #78879a;
+  font-size: 10px;
+  line-height: 1.5;
+}
+
+.dashboard-notification-copy strong {
+  color: #2c4058;
+  font-size: 10px;
+}
+
+.dashboard-notification-copy small {
+  color: #9aa5b2;
+  font-size: 8px;
+}
+
+.dashboard-notification-empty {
+  margin: 0;
+  padding: 22px;
+  color: #8290a2;
+  font-size: 10px;
+  text-align: center;
+}
+
 .dashboard-topbar-crumb {
   color: #8a97a8;
   font-size: 10px;
@@ -4318,6 +4469,70 @@ select {
   min-height: 39px;
   padding: 0 15px;
   font-size: 11px;
+}
+
+.dashboard-form-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.dashboard-secondary-button {
+  min-height: 39px;
+  padding: 0 14px;
+  border: 1px solid #d6e3f3;
+  border-radius: 6px;
+  background: #f7faff;
+  color: #285d9f;
+  cursor: pointer;
+  font: inherit;
+  font-size: 11px;
+  font-weight: 650;
+}
+
+.dashboard-secondary-button:hover:not(:disabled) {
+  background: #edf4ff;
+}
+
+.dashboard-secondary-button:disabled {
+  cursor: wait;
+  opacity: 0.62;
+}
+
+.assignment-dropzone {
+  display: grid !important;
+  min-height: 118px;
+  place-content: center;
+  gap: 7px !important;
+  padding: 18px;
+  border: 1px dashed #a9c5e8;
+  border-radius: 8px;
+  background: #f8fbff;
+  color: #406184 !important;
+  cursor: pointer;
+  text-align: center;
+}
+
+.assignment-dropzone:hover {
+  border-color: #4388df;
+  background: #f0f6ff;
+}
+
+.assignment-dropzone strong {
+  font-size: 12px;
+}
+
+.assignment-dropzone span {
+  color: #8191a4;
+  font-size: 10px;
+  font-weight: 450;
+}
+
+.dashboard-submission-review {
+  margin-top: 15px;
+  padding-top: 14px;
+  border-top: 1px solid #edf1f6;
 }
 
 .dashboard-form-submit:disabled,

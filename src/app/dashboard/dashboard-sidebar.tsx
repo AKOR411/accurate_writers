@@ -88,6 +88,8 @@ const navigation: Record<AccountRole, NavItem[]> = {
   ],
   writer: [
     { href: "/dashboard", label: "Dashboard", icon: "\u2302" },
+    { href: "/dashboard/offers", label: "Job Offers", icon: "\u2709" },
+    { href: "/dashboard/assignments", label: "My Assignments", icon: "\u25a1" },
     {
       href: "/dashboard/available",
       label: "Available",

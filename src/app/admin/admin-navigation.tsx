@@ -11,6 +11,7 @@ const navigation = [
   { href: "/admin/payments", label: "Payments", icon: "＄", soon: true },
   { href: "/admin/reports", label: "Reports", icon: "▥" },
   { href: "/admin/settings", label: "Settings", icon: "⚙" },
+  { href: "/admin/disputes", label: "Disputes", icon: "⚑" },
 ];
 
 export default function AdminNavigation() {
@@ -25,7 +26,7 @@ export default function AdminNavigation() {
             ? pathname === item.href
             : pathname.startsWith(item.href);
 
-        if (item.soon) {
+        if (item.soon && item.href !== "/admin/payments") {
           return (
             <span className="admin-nav-link disabled" aria-disabled="true" key={item.href}>
               <span className="admin-nav-icon" aria-hidden="true">{item.icon}</span>

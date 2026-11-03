@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import StatusForm from "@/app/admin/status-form";
+import DisputeStatusForm from "@/app/admin/dispute-status-form";
 import { requireAdminClient } from "@/lib/admin";
 
 export const instant = false;
@@ -9,6 +10,7 @@ type Section =
   | "users"
   | "jobs"
   | "applications"
+  | "disputes"
   | "payments"
   | "reports"
   | "settings";
@@ -74,10 +76,15 @@ function pageHeading(section: Section) {
       title: "Applications",
       subtitle: "Track applications and keep decisions moving.",
     },
+    disputes: {
+      eyebrow: "CASE MANAGEMENT",
+      title: "Disputes",
+      subtitle: "Review assignment disputes and record resolution decisions.",
+    },
     payments: {
       eyebrow: "FINANCIAL OPERATIONS",
       title: "Payments",
-      subtitle: "Payment reporting will be available when transactions are connected.",
+      subtitle: "Track employer collections and confirmed M-PESA transactions.",
     },
     reports: {
       eyebrow: "PLATFORM HEALTH",
@@ -111,6 +118,7 @@ export default async function AdminSectionPage({
     "users",
     "jobs",
     "applications",
+    "disputes",
     "payments",
     "reports",
     "settings",
@@ -124,23 +132,44 @@ export default async function AdminSectionPage({
   const supabase = await requireAdminClient();
 
   if (section === "payments") {
+    const payments = assertQuery("assignment payments", await supabase.from("payments").select("id, assignment_id, amount, currency, status, collection_status, provider_reference, collection_confirmed_at, created_at").order("created_at", { ascending: false }).limit(100));
+    const paymentIds = payments.map((payment) => payment.id);
+    const attempts = paymentIds.length ? assertQuery("Daraja attempts", await supabase.from("payment_attempts").select("id, payment_id, phone_number, status, receipt_number, result_description, created_at").in("payment_id", paymentIds).order("created_at", { ascending: false })) : [];
     return (
       <div className="admin-page">
         <PageHeading {...heading} />
-        <section className="admin-coming-soon">
+        <section className="admin-panel">
           <span className="admin-coming-icon" aria-hidden="true">＄</span>
-          <p className="admin-eyebrow">PAYMENTS NOT CONNECTED</p>
-          <h2>Financial data will appear here when payments are live.</h2>
+          <p className="admin-eyebrow">DARAJA STK PUSH</p>
+          <h2>Recent assignment collections</h2>
           <p>
-            This workspace does not yet process payments, so there are no
-            transaction records to report.
+            Payment records update after the verified M-PESA callback is received.
           </p>
+          {payments.length ? <div className="admin-table-scroll"><table className="admin-table"><thead><tr><th>Payment</th><th>Amount</th><th>Collection</th><th>Writer payout</th><th>Latest attempt</th><th>Receipt</th></tr></thead><tbody>{payments.map((payment) => { const attempt = attempts.find((item) => item.payment_id === payment.id); return <tr key={payment.id}><td><code className="admin-id">{payment.id.slice(0, 8)}</code></td><td>{payment.currency} {payment.amount.toLocaleString()}</td><td><StatusBadge status={payment.collection_status} /></td><td><StatusBadge status={payment.status} /></td><td>{attempt ? <>{attempt.status} · ••••{attempt.phone_number.slice(-4)} · {formatDate(attempt.created_at)}{attempt.result_description && <small className="admin-cell-subtitle">{attempt.result_description}</small>}</> : "No STK request"}</td><td>{payment.provider_reference ?? "—"}</td></tr>; })}</tbody></table></div> : <EmptyState title="No assignment payments yet." description="A payment record is created when an employer approves completed work." />}
           <Link className="admin-primary-link" href="/admin/settings">
             Review admin setup <span aria-hidden="true">↗</span>
           </Link>
         </section>
       </div>
     );
+  }
+
+  if (section === "disputes") {
+    const disputes = assertQuery("assignment disputes", await supabase.from("disputes").select("id, assignment_id, opened_by, reason, status, resolution, created_at").order("created_at", { ascending: false }).limit(100));
+    const assignmentIds = [...new Set(disputes.map((dispute) => dispute.assignment_id))];
+    const assignments = assignmentIds.length ? assertQuery("dispute assignments", await supabase.from("assignments").select("id, job_id, employer_id, writer_id").in("id", assignmentIds)) : [];
+    const jobIds = [...new Set(assignments.map((assignment) => assignment.job_id))];
+    const profileIds = [...new Set(assignments.flatMap((assignment) => [assignment.employer_id, assignment.writer_id]))];
+    const [jobsResult, profilesResult] = await Promise.all([
+      jobIds.length ? supabase.from("jobs").select("id, title").in("id", jobIds) : Promise.resolve({ data: [], error: null }),
+      profileIds.length ? supabase.from("profiles").select("id, full_name, email").in("id", profileIds) : Promise.resolve({ data: [], error: null }),
+    ]);
+    const jobs = assertQuery("dispute job titles", jobsResult);
+    const people = assertQuery("dispute participants", profilesResult);
+    const assignmentById = new Map(assignments.map((assignment) => [assignment.id, assignment]));
+    const jobById = new Map(jobs.map((job) => [job.id, job]));
+    const personById = new Map(people.map((person) => [person.id, person]));
+    return <div className="admin-page"><PageHeading {...heading} /><section className="admin-panel"><div className="admin-panel-heading"><div><p className="admin-eyebrow">ASSIGNMENT RESOLUTION</p><h2>Recent disputes</h2></div><span className="admin-table-note">Latest 100 disputes</span></div>{disputes.length ? <div className="admin-table-scroll"><table className="admin-table"><thead><tr><th>Assignment</th><th>Participants</th><th>Issue</th><th>Opened</th><th>Status and resolution</th></tr></thead><tbody>{disputes.map((dispute) => { const assignment = assignmentById.get(dispute.assignment_id); return <tr key={dispute.id}><td><strong>{jobById.get(assignment?.job_id ?? "")?.title ?? "Assignment"}</strong></td><td>{personById.get(assignment?.employer_id ?? "")?.full_name ?? "Employer"} ↔ {personById.get(assignment?.writer_id ?? "")?.full_name ?? "Writer"}</td><td>{dispute.reason}</td><td>{formatDate(dispute.created_at)}</td><td><DisputeStatusForm id={dispute.id} status={dispute.status} resolution={dispute.resolution} /></td></tr>; })}</tbody></table></div> : <EmptyState title="No disputes yet." description="Assignment disputes will appear here for administrator review." />}</section></div>;
   }
 
   if (section === "users") {
@@ -206,7 +235,8 @@ export default async function AdminSectionPage({
   if (section === "jobs") {
     const result = await supabase
       .from("jobs")
-      .select("id, title, category, budget_min, budget_max, currency, status, created_at, employer_id")
+      .select("id, title, category, budget_min, budget_max, currency, status, is_draft, created_at, employer_id")
+      .eq("is_draft", false)
       .order("created_at", { ascending: false })
       .limit(50);
     const jobs = assertQuery("jobs", result);

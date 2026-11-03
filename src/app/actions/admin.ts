@@ -85,3 +85,19 @@ export async function updateApplicationStatus(
   revalidatePath("/admin/reports");
   return { success: "Application status saved." };
 }
+
+export async function updateAssignmentDispute(_previousState: AdminActionState, formData: FormData): Promise<AdminActionState> {
+  const id = getString(formData, "id");
+  const status = getString(formData, "status");
+  const resolution = getString(formData, "resolution").trim();
+  if (!uuidPattern.test(id) || !["open", "under_review", "resolved", "closed"].includes(status)) return { error: "Select a valid dispute and status." };
+  if (["resolved", "closed"].includes(status) && resolution.length < 10) return { error: "Add a resolution note of at least 10 characters." };
+  const supabase = await createClient();
+  await assertAdmin(supabase);
+  const { error } = await supabase.from("disputes").update({ status, resolution: resolution || null, resolved_at: ["resolved", "closed"].includes(status) ? new Date().toISOString() : null }).eq("id", id);
+  if (error) return { error: `Could not update the dispute: ${error.message}` };
+  revalidatePath("/admin/disputes");
+  revalidatePath("/dashboard/disputed");
+  revalidatePath("/dashboard/employer/disputed");
+  return { success: "Dispute status saved." };
+}

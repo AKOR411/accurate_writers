@@ -55,11 +55,13 @@ export default async function AdminOverviewPage() {
     supabase
       .from("jobs")
       .select("id", { count: "exact", head: true })
-      .eq("status", "approved"),
+      .eq("status", "approved")
+      .eq("is_draft", false),
     supabase
       .from("jobs")
       .select("id", { count: "exact", head: true })
-      .eq("status", "pending"),
+      .eq("status", "pending")
+      .eq("is_draft", false),
     supabase.from("applications").select("id", { count: "exact", head: true }),
     supabase
       .from("applications")
