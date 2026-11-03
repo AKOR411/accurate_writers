@@ -3340,6 +3340,22 @@ select {
   padding: 28px 0 48px;
 }
 
+.dashboard-section-panel {
+  margin-top: 22px;
+}
+
+.dashboard-empty-mark {
+  display: grid;
+  width: 42px;
+  height: 42px;
+  place-items: center;
+  margin: 0 auto 13px;
+  border-radius: 13px;
+  background: #edf4ff;
+  color: #1769e8;
+  font-size: 19px;
+}
+
 .dashboard-welcome {
   display: flex;
   align-items: center;
