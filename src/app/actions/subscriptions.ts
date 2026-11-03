@@ -29,6 +29,23 @@ function hasRecentAuthentication(authTime: unknown) {
   return Number.isFinite(timestamp) && timestamp <= now + 30 && now - timestamp <= 5 * 60;
 }
 
+function readTokenClaims(token: string): Record<string, unknown> | null {
+  try {
+    const payload = token.split(".")[1];
+    if (!payload) return null;
+    const parsed: unknown = JSON.parse(Buffer.from(payload, "base64url").toString("utf8"));
+    return parsed && typeof parsed === "object" ? parsed as Record<string, unknown> : null;
+  } catch {
+    return null;
+  }
+}
+
+function getRecentAuthTime(claims: Record<string, unknown> | null, lastSignInAt?: string | null) {
+  const claimTime = claims?.auth_time;
+  if (claimTime !== undefined && hasRecentAuthentication(claimTime)) return claimTime;
+  return lastSignInAt ? Math.floor(new Date(lastSignInAt).getTime() / 1000) : claimTime;
+}
+
 async function getWriterAccount() {
   const supabase = await createClient();
   const { data: claims, error: claimsError } = await supabase.auth.getClaims();
@@ -68,13 +85,12 @@ export async function verifyWriterSubscriptionPassword(
     }
     const accessToken = data.session?.access_token;
     if (!accessToken) return { error: "Password confirmed, but a secure session could not be created. Sign in again and retry." };
-    const { data: refreshedClaims, error: claimsError } = await account.supabase.auth.getClaims(accessToken);
+    const claims = readTokenClaims(accessToken);
     if (
-      claimsError ||
-      refreshedClaims?.claims?.sub !== account.userId ||
-      !hasRecentAuthentication(refreshedClaims?.claims?.auth_time)
+      claims?.sub !== account.userId ||
+      !hasRecentAuthentication(getRecentAuthTime(claims, data.user.last_sign_in_at))
     ) {
-      return { error: "Password confirmed, but your session could not be refreshed. Sign in again and retry." };
+      return { error: "Password confirmed, but a recent sign-in could not be verified. Please sign in again and retry." };
     }
     const cookieStore = await cookies();
     cookieStore.set(reauthCookieName, accessToken, {
@@ -101,11 +117,13 @@ export async function initiateSubscriptionPayment(
   if (!reauthToken) {
     return { error: "Confirm your account password again before starting payment." };
   }
-  const { data: reauthClaims, error: reauthError } = await account.supabase.auth.getClaims(reauthToken);
+  const { data: verifiedSession, error: reauthError } = await account.supabase.auth.getUser(reauthToken);
+  const reauthClaims = readTokenClaims(reauthToken);
   if (
     reauthError ||
-    reauthClaims?.claims?.sub !== account.userId ||
-    !hasRecentAuthentication(reauthClaims?.claims?.auth_time)
+    verifiedSession.user?.id !== account.userId ||
+    reauthClaims?.sub !== account.userId ||
+    !hasRecentAuthentication(getRecentAuthTime(reauthClaims, verifiedSession.user?.last_sign_in_at))
   ) return { error: "Confirm your account password again before starting payment." };
 
   const planKey = formData.get("plan_key");
