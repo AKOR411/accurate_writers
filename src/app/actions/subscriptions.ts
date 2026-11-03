@@ -1,8 +1,5 @@
 "use server";
 
-import { createHmac, timingSafeEqual } from "node:crypto";
-import { cookies } from "next/headers";
-
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/service";
@@ -24,28 +21,10 @@ const subscriptionPlans = {
 
 type SubscriptionPlanKey = keyof typeof subscriptionPlans;
 
-const reauthCookieName = "aw-subscription-reauth";
-
-function createReauthSignature(userId: string, issuedAt: string) {
-  const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
-  if (!key) throw new Error("Subscription checkout authorization is not configured.");
-  return createHmac("sha256", key).update(userId + "." + issuedAt).digest("hex");
-}
-
-function hasValidReauth(token: string | undefined, userId: string) {
-  if (!token) return false;
-  const [tokenUserId, issuedAt, signature] = token.split(".");
-  const issuedAtNumber = Number(issuedAt);
-  if (
-    tokenUserId !== userId ||
-    !Number.isInteger(issuedAtNumber) ||
-    issuedAtNumber > Date.now() + 30_000 ||
-    Date.now() - issuedAtNumber > 5 * 60_000 ||
-    !signature
-  ) return false;
-  const expected = Buffer.from(createReauthSignature(tokenUserId, issuedAt));
-  const actual = Buffer.from(signature);
-  return expected.length === actual.length && timingSafeEqual(expected, actual);
+function hasRecentAuthentication(authTime: unknown) {
+  const timestamp = typeof authTime === "number" ? authTime : Number(authTime);
+  const now = Math.floor(Date.now() / 1000);
+  return Number.isFinite(timestamp) && timestamp <= now + 30 && now - timestamp <= 5 * 60;
 }
 
 async function getWriterAccount() {
@@ -63,38 +42,40 @@ async function getWriterAccount() {
   if (error || !profile || profile.role !== "writer") {
     return { error: "Only writer accounts can subscribe to a writer plan." } as const;
   }
-  return { supabase, userId, profile } as const;
+  return { supabase, userId, profile, authTime: claims?.claims?.auth_time } as const;
 }
 
 export async function verifyWriterSubscriptionPassword(
   _previousState: SubscriptionActionState,
   formData: FormData,
 ): Promise<SubscriptionActionState> {
-  const account = await getWriterAccount();
-  if ("error" in account) return { error: account.error };
-  const password = formData.get("password");
-  if (typeof password !== "string" || password.length === 0) {
-    return { error: "Enter your account password to continue." };
-  }
+  try {
+    const account = await getWriterAccount();
+    if ("error" in account) return { error: account.error };
+    const password = formData.get("password");
+    if (typeof password !== "string" || password.length === 0) {
+      return { error: "Enter your account password to continue." };
+    }
 
-  const { data, error } = await account.supabase.auth.signInWithPassword({
-    email: account.profile.email,
-    password,
-  });
-  if (error || data.user?.id !== account.userId) {
-    return { error: "The password could not be verified. Check it and try again." };
+    const { data, error } = await account.supabase.auth.signInWithPassword({
+      email: account.profile.email,
+      password,
+    });
+    if (error || data.user?.id !== account.userId) {
+      return { error: "The password could not be verified. Check it and try again." };
+    }
+    const { data: refreshedClaims, error: claimsError } = await account.supabase.auth.getClaims();
+    if (
+      claimsError ||
+      refreshedClaims?.claims?.sub !== account.userId ||
+      !hasRecentAuthentication(refreshedClaims?.claims?.auth_time)
+    ) {
+      return { error: "Password confirmed, but your session could not be refreshed. Sign in again and retry." };
+    }
+    return { passwordVerified: true };
+  } catch {
+    return { error: "Could not confirm your password right now. Please try again." };
   }
-  const issuedAt = Date.now().toString();
-  const signature = createReauthSignature(account.userId, issuedAt);
-  const cookieStore = await cookies();
-  cookieStore.set(reauthCookieName, account.userId + "." + issuedAt + "." + signature, {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: "strict",
-    path: "/dashboard",
-    maxAge: 5 * 60,
-  });
-  return { passwordVerified: true };
 }
 
 export async function initiateSubscriptionPayment(
@@ -103,6 +84,9 @@ export async function initiateSubscriptionPayment(
 ): Promise<SubscriptionActionState> {
   const account = await getWriterAccount();
   if ("error" in account) return { error: account.error };
+  if (!hasRecentAuthentication(account.authTime)) {
+    return { error: "Confirm your account password again before starting payment." };
+  }
 
   const planKey = formData.get("plan_key");
   if (typeof planKey !== "string" || !Object.hasOwn(subscriptionPlans, planKey)) {
@@ -113,12 +97,6 @@ export async function initiateSubscriptionPayment(
   const phoneMatch = /^(?:\+?254|0)?([17]\d{8})$/.exec(rawPhone);
   if (!phoneMatch) return { error: "Enter a valid Kenyan M-PESA number, such as 0712345678." };
   const phone = "254" + phoneMatch[1];
-
-  const cookieStore = await cookies();
-  const reauthToken = cookieStore.get(reauthCookieName)?.value;
-  if (!hasValidReauth(reauthToken, account.userId)) {
-    return { error: "Confirm your account password again before starting payment." };
-  }
 
   let service;
   try {
@@ -144,8 +122,6 @@ export async function initiateSubscriptionPayment(
   if (current?.status === "active") return { error: "You already have an active subscription." };
   if (current?.status === "pending_payment") return { error: "A subscription payment is already awaiting confirmation. Check your phone before retrying." };
   if (current?.status === "payment_review") return { error: "Your last payment needs support review before another subscription can be started." };
-
-  cookieStore.delete(reauthCookieName);
 
   const { data: subscription, error: subscriptionError } = await service.from("subscriptions")
     .insert({
