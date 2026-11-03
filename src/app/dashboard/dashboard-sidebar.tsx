@@ -43,7 +43,15 @@ const navigation: Record<AccountRole, NavItem[]> = {
     },
     { href: "/dashboard/in-progress", label: "In Progress", icon: "\u270e" },
     { href: "/dashboard/in-review", label: "In Review", icon: "\u2691" },
-    { href: "/dashboard/completed", label: "Completed", icon: "\u25a1" },
+    {
+      href: "/dashboard/completed",
+      label: "Completed",
+      icon: "\u25a1",
+      children: [
+        { href: "/dashboard/pending-payment", label: "Pending payment", icon: "\u2013" },
+        { href: "/dashboard/paid", label: "Paid", icon: "\u2013" },
+      ],
+    },
     { href: "/dashboard/revision", label: "Revision", icon: "\u270d" },
     { href: "/dashboard/canceled", label: "Canceled", icon: "\u2298" },
     { href: "/dashboard/disputed", label: "Disputed", icon: "\u2615" },
@@ -52,7 +60,15 @@ const navigation: Record<AccountRole, NavItem[]> = {
     { href: "/dashboard/chat", label: "General chat", icon: "\u25ef" },
     { href: "/dashboard/transactions", label: "Transactions", icon: "\u25a3" },
     { href: "/dashboard/fines", label: "Fines", icon: "\u2692" },
-    { href: "/dashboard/subscriptions", label: "Subscriptions", icon: "\u0024" },
+    {
+      href: "/dashboard/subscriptions",
+      label: "Subscriptions",
+      icon: "\u0024",
+      children: [
+        { href: "/dashboard/subscribe", label: "Subscribe", icon: "\u2013" },
+        { href: "/dashboard/active-subscriptions", label: "Active Subscriptions", icon: "\u2013" },
+      ],
+    },
     { href: "/dashboard/untrusted-employers", label: "Untrusted employers", icon: "\u26a0" },
     { href: "/dashboard/news", label: "News", icon: "\u25a4" },
     { href: "/dashboard/faq", label: "FAQ", icon: "?" },
@@ -72,6 +88,13 @@ export default function DashboardSidebar({
     pathname.startsWith("/dashboard/available") ||
       ["/dashboard/new", "/dashboard/my-bids", "/dashboard/discarded", "/dashboard/invited", "/dashboard/private-available"].includes(pathname)
   );
+  const [subscriptionsExpandedOverride, setSubscriptionsExpandedOverride] = useState<boolean | null>(null);
+  const subscriptionsExpanded = subscriptionsExpandedOverride ?? pathname.startsWith("/dashboard/subscr");
+  const [completedExpandedOverride, setCompletedExpandedOverride] = useState<boolean | null>(null);
+  const completedExpanded = completedExpandedOverride ?? (
+    pathname.startsWith("/dashboard/completed") ||
+      ["/dashboard/pending-payment", "/dashboard/paid"].includes(pathname)
+  );
 
   return (
     <aside className={`dashboard-sidebar role-${role}`}>
@@ -89,16 +112,20 @@ export default function DashboardSidebar({
                   <span>{item.label}</span>
                 </Link>
                 <button
-                  aria-expanded={availableExpanded}
-                  aria-label={`${availableExpanded ? "Collapse" : "Expand"} ${item.label} pages`}
+                  aria-expanded={item.href === "/dashboard/available" ? availableExpanded : item.href === "/dashboard/subscriptions" ? subscriptionsExpanded : completedExpanded}
+                  aria-label={`${(item.href === "/dashboard/available" ? availableExpanded : item.href === "/dashboard/subscriptions" ? subscriptionsExpanded : completedExpanded) ? "Collapse" : "Expand"} ${item.label} pages`}
                   className="dashboard-nav-toggle"
-                  onClick={() => setAvailableExpandedOverride((expanded) => !(expanded ?? availableExpanded))}
+                  onClick={() => item.href === "/dashboard/available"
+                    ? setAvailableExpandedOverride((expanded) => !(expanded ?? availableExpanded))
+                    : item.href === "/dashboard/subscriptions"
+                      ? setSubscriptionsExpandedOverride((expanded) => !(expanded ?? subscriptionsExpanded))
+                      : setCompletedExpandedOverride((expanded) => !(expanded ?? completedExpanded))}
                   type="button"
                 >
-                  <span aria-hidden="true">{availableExpanded ? "v" : ">"}</span>
+                  <span aria-hidden="true">{(item.href === "/dashboard/available" ? availableExpanded : item.href === "/dashboard/subscriptions" ? subscriptionsExpanded : completedExpanded) ? "v" : ">"}</span>
                 </button>
               </div>
-              {availableExpanded && (
+              {(item.href === "/dashboard/available" ? availableExpanded : item.href === "/dashboard/subscriptions" ? subscriptionsExpanded : completedExpanded) && (
                 <div className="dashboard-nav-subitems">
                   {item.children.map((child) => (
                     <Link
