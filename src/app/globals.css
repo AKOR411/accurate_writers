@@ -3343,6 +3343,11 @@ select {
   font-size: 9px;
 }
 
+.dashboard-sidebar.role-employer .dashboard-nav-sublink {
+  min-height: 31px;
+  font-size: 10px;
+}
+
 .dashboard-nav-badge {
   display: grid;
   min-width: 17px;

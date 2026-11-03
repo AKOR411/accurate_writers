@@ -48,25 +48,37 @@ const navigation: Record<AccountRole, NavItem[]> = {
     {
       href: "/dashboard/employer/my-writers", label: "My Writers", icon: "\u2659",
       children: [
-        { href: "/dashboard/employer/my-writers", label: "All Writers", icon: "\u2013" },
-        { href: "/dashboard/employer/public-writers", label: "Public Writers", icon: "\u2013" },
-        { href: "/dashboard/employer/top-writers", label: "Top Writers", icon: "\u2013" },
+        { href: "/dashboard/employer/private-writers", label: "Private", icon: "\u2013", badge: "0" },
+        { href: "/dashboard/employer/public-writers", label: "Public", icon: "\u2013", badge: "0" },
+        { href: "/dashboard/employer/favourite-public", label: "Favourite (Public)", icon: "\u2013", badge: "0" },
+        { href: "/dashboard/employer/suspended-writers", label: "Suspended", icon: "\u2013", badge: "0" },
+        { href: "/dashboard/employer/unapproved-writers", label: "Unapproved", icon: "\u2013", badge: "0" },
+        { href: "/dashboard/employer/invite-writer", label: "Invite Writer", icon: "\u2013" },
       ],
     },
     { href: "/dashboard/employer/manage-reviews", label: "Manage Reviews", icon: "\u2606" },
     { href: "/dashboard/employer/chat", label: "Chat", icon: "\u25ef" },
     {
-      href: "/dashboard/employer/my-account", label: "My Account", icon: "\u2659",
+      href: "/dashboard/employer/all-accounts", label: "My Accounts", icon: "\u25a3",
       children: [
-        { href: "/dashboard/employer/profile", label: "Profile", icon: "\u2013" },
-        { href: "/dashboard/employer/settings", label: "Settings", icon: "\u2013" },
+        { href: "/dashboard/employer/all-accounts", label: "All Accounts", icon: "\u2013" },
+        { href: "/dashboard/employer/add-account", label: "Add Account", icon: "\u2013" },
       ],
     },
     {
       href: "/dashboard/employer/transaction-history", label: "Transaction History", icon: "\u0024",
       children: [
-        { href: "/dashboard/employer/transaction-history", label: "History", icon: "\u2013" },
-        { href: "/dashboard/employer/subscriptions", label: "Subscriptions", icon: "\u2013" },
+        { href: "/dashboard/employer/wallet-statement", label: "Wallet Statement", icon: "\u2013" },
+        { href: "/dashboard/employer/sms", label: "SMS", icon: "\u2013" },
+        { href: "/dashboard/employer/plag-checker", label: "Plag Checker", icon: "\u2013" },
+      ],
+    },
+    {
+      href: "/dashboard/employer/subscriptions", label: "Subscriptions", icon: "\u0024",
+      children: [
+        { href: "/dashboard/employer/subscribe", label: "Subscribe", icon: "\u2013" },
+        { href: "/dashboard/employer/active-subscriptions", label: "Active", icon: "\u2013" },
+        { href: "/dashboard/employer/expired-subscriptions", label: "Expired", icon: "\u2013" },
       ],
     },
     { href: "/dashboard/employer/guidelines", label: "Guidelines / FAQs", icon: "?" },
@@ -173,6 +185,7 @@ export default function DashboardSidebar({
                       key={child.href}
                     >
                       <span>{child.label}</span>
+                      {child.badge && <span className="dashboard-nav-badge">{child.badge}</span>}
                     </Link>
                   ))}
                 </div>
